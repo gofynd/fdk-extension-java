@@ -200,7 +200,9 @@ public class ExtensionController {
     }
 
     @PostMapping(path = "/uninstall")
-    public ResponseEntity uninstall(@RequestBody Client client
+    public ResponseEntity uninstall(@RequestBody Client client,
+                                    HttpServletRequest request,
+                                    HttpServletResponse response
                                   ) {
 
         try {
