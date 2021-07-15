@@ -53,7 +53,7 @@
 		<dependency>
 			<groupId>com.github.gofynd</groupId>
 			<artifactId>fdk-client-java</artifactId>
-			<version>v0.0.1</version>
+			<version>v0.0.2</version>
 		</dependency>
 
 		<dependency>
