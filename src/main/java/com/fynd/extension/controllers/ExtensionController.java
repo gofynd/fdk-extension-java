@@ -21,9 +21,9 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.time.Duration;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.UUID;
@@ -169,7 +169,7 @@ public class ExtensionController {
                                                      .sameSite("None")
                                                      .secure(true)
                                                      .path("/")
-                                                     .maxAge(token.getExpiresIn())
+                                                     .maxAge(Duration.ofSeconds(token.getExpiresIn()))
                                                      .build();
 
             ExtensionContext.set("fdk-session", fdkSession);

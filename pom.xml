@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.4.3</version>
+		<version>2.1.0.RELEASE</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.fynd</groupId>
@@ -53,7 +53,7 @@
 		<dependency>
 			<groupId>com.github.gofynd</groupId>
 			<artifactId>fdk-client-java</artifactId>
-			<version>ee170b19ae</version>
+			<version>v0.0.1</version>
 		</dependency>
 
 		<dependency>
