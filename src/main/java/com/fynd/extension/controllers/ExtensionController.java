@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.time.Duration;
-import java.util.Calendar;
+import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
 
@@ -66,20 +66,21 @@ public class ExtensionController {
                 }
             }
 
-            Date sessionExpires = new Date(new Date().getTime() + 900000);
+            Date sessionExpires = Date.from(Instant.now().plusMillis(900000));
 
             if (session.isNew()) {
                 session.setCompany_id(companyId);
                 session.setScope(ext.getScopes());
                 session.setExpires(FdkConstants.DATE_FORMAT.get()
                                                            .format(sessionExpires));
-                ;
+                session.setExpires_in(sessionExpires.getTime());
                 session.setAccess_mode(ext.getAccess_mode());
                 session.setExtension_id(ext.getApi_key());
             } else {
                 if (!StringUtils.isEmpty(session.getExpires())) {
                     session.setExpires(FdkConstants.DATE_FORMAT.get()
                                                                .format(session.getExpires()));
+                    session.setExpires_in(sessionExpires.getTime());
                 }
             }
 
@@ -92,7 +93,7 @@ public class ExtensionController {
                                                      .sameSite("None")
                                                      .secure(true)
                                                      .path("/")
-                                                     .maxAge(Math.toIntExact(session.getExpires_in()))
+                                                     .maxAge(Duration.between(Instant.now() ,Instant.ofEpochMilli(session.getExpires_in())) )
                                                      .build();
 
 
@@ -104,10 +105,6 @@ public class ExtensionController {
                                                                     session.getState(),
                                                                     ext.isOnlineAccessMode());
             sessionStorage.saveSession(session);
-            HttpHeaders headers = new HttpHeaders();
-            headers.add(HttpHeaders.SET_COOKIE, resCookie.toString());
-
-            response.setHeader(HttpHeaders.LOCATION, redirectUrl);
             return ResponseEntity.status(HttpStatus.MOVED_TEMPORARILY)
                                  .header(HttpHeaders.LOCATION, redirectUrl)
                                  .header(HttpHeaders.SET_COOKIE, resCookie.toString())
@@ -144,9 +141,7 @@ public class ExtensionController {
             AccessToken token = platformConfig.getPlatformOauthClient()
                                               .getRawToken();
 
-            Date sessionExpires = new Date(Calendar.getInstance()
-                                                   .getTime()
-                                                   .getTime() + token.getExpiresIn() * 1000);
+            Date sessionExpires = Date.from(Instant.now().plusMillis(token.getExpiresIn() * 1000));
 
             if (ext.isOnlineAccessMode()) {
                 fdkSession.setExpires(FdkConstants.DATE_FORMAT.get()
@@ -169,7 +164,7 @@ public class ExtensionController {
                                                      .sameSite("None")
                                                      .secure(true)
                                                      .path("/")
-                                                     .maxAge(Duration.ofSeconds(token.getExpiresIn()))
+                                                     .maxAge(Duration.between(Instant.now() ,Instant.ofEpochMilli(fdkSession.getExpires_in())) )
                                                      .build();
 
             ExtensionContext.set("fdk-session", fdkSession);
@@ -184,10 +179,7 @@ public class ExtensionController {
             String redirectUrl = ext.getCallbacks()
                                              .getAuth()
                                              .apply(ExtensionContext.get());
-            HttpHeaders headers = new HttpHeaders();
-            headers.add(HttpHeaders.SET_COOKIE, resCookie.toString());
 
-            response.setHeader(HttpHeaders.LOCATION, redirectUrl);
             return ResponseEntity.status(HttpStatus.MOVED_TEMPORARILY)
                                  .header(HttpHeaders.LOCATION, redirectUrl)
                                  .header(HttpHeaders.SET_COOKIE, resCookie.toString())
