@@ -52,7 +52,7 @@
 		<dependency>
 			<groupId>com.github.gofynd</groupId>
 			<artifactId>fdk-client-java</artifactId>
-			<version>v0.0.3-SNAPSHOT</version>
+			<version>v0.0.5-SNAPSHOT</version>
 		</dependency>
 
 
