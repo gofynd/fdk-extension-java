@@ -33,8 +33,10 @@ public class SessionInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
 
+        var companyId = !StringUtils.isEmpty(request.getHeader("x-company-id"))?request.getHeader("x-company-id"):request.getParameter("company_id");
+        String compCookieName = FdkConstants.SESSION_COOKIE_NAME+"_"+companyId;
         String sessionId = Arrays.stream(request.getCookies())
-                                 .filter(c -> c.getName().equals(FdkConstants.SESSION_COOKIE_NAME))
+                                 .filter(c -> c.getName().equals(compCookieName))
                                  .findFirst()
                                  .map(Cookie::getValue)
                                  .orElse(null);

@@ -33,7 +33,7 @@ public class BaseMVCConfigurer implements WebMvcConfigurer {
 
         registry.addInterceptor(sessionInterceptor).addPathPatterns("/fp/auth","/platform/**").order(Ordered.HIGHEST_PRECEDENCE);
         registry.addInterceptor(platformInterceptor).addPathPatterns("/platform/**").order(Ordered.LOWEST_PRECEDENCE);
-        registry.addInterceptor(sessionInterceptor).addPathPatterns("/application/**");
+        registry.addInterceptor(applicationInterceptor).addPathPatterns("/application/**");
     }
 }
 

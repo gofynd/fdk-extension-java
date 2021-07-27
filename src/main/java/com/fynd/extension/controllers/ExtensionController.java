@@ -86,9 +86,8 @@ public class ExtensionController {
 
             ExtensionContext.set("fdk-session", session);
             ExtensionContext.set("extension", ext);
-
-
-            ResponseCookie resCookie = ResponseCookie.from(FdkConstants.SESSION_COOKIE_NAME, session.getId())
+            String compCookieName = FdkConstants.SESSION_COOKIE_NAME+"_"+companyId;
+            ResponseCookie resCookie = ResponseCookie.from(compCookieName, session.getId())
                                                      .httpOnly(true)
                                                      .sameSite("None")
                                                      .secure(true)
@@ -106,6 +105,7 @@ public class ExtensionController {
                                                                     ext.isOnlineAccessMode());
             sessionStorage.saveSession(session);
             return ResponseEntity.status(HttpStatus.MOVED_TEMPORARILY)
+                                 .header("x-company-id", companyId)
                                  .header(HttpHeaders.LOCATION, redirectUrl)
                                  .header(HttpHeaders.SET_COOKIE, resCookie.toString())
                                  .build();
@@ -157,8 +157,8 @@ public class ExtensionController {
             fdkSession.setRefresh_token(token.getRefreshToken());
             sessionStorage.saveSession(fdkSession);
 
-
-            ResponseCookie resCookie = ResponseCookie.from(FdkConstants.SESSION_COOKIE_NAME,
+            String compCookieName = FdkConstants.SESSION_COOKIE_NAME+"_"+fdkSession.getCompany_id();
+            ResponseCookie resCookie = ResponseCookie.from(compCookieName,
                                                            fdkSession.getId())
                                                      .httpOnly(true)
                                                      .sameSite("None")
@@ -172,15 +172,13 @@ public class ExtensionController {
 
 //            session.setState(UUID.randomUUID()
 //                                 .toString());
-            ExtensionContext.set("fdk-session", fdkSession);
-            ExtensionContext.set("extension", ext);
-
 
             String redirectUrl = ext.getCallbacks()
                                              .getAuth()
                                              .apply(ExtensionContext.get());
 
             return ResponseEntity.status(HttpStatus.MOVED_TEMPORARILY)
+                                 .header("x-company-id", fdkSession.getCompany_id())
                                  .header(HttpHeaders.LOCATION, redirectUrl)
                                  .header(HttpHeaders.SET_COOKIE, resCookie.toString())
                                  .build();
