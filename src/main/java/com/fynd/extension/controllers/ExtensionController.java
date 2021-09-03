@@ -42,6 +42,7 @@ public class ExtensionController {
 
     @GetMapping(path = "/install")
     public ResponseEntity install(@RequestParam(value = "company_id") String companyId,
+                                  @RequestParam(value = "application_id",required = false) String applicationId,
                                   HttpServletResponse response,
                                   HttpServletRequest request) {
 
@@ -98,9 +99,15 @@ public class ExtensionController {
 
             session.setState(UUID.randomUUID()
                                  .toString());
+
+            // pass application id if received
+            String authCallback = ext.getAuthCallback();
+            if(!StringUtils.isEmpty(applicationId)) {
+                authCallback += "?application_id="+applicationId;
+            }
             // start authorization flow
             String redirectUrl = platformConfig.getPlatformOauthClient()
-                                               .getAuthorizationURL(session.getScope(), ext.getAuthCallback(),
+                                               .getAuthorizationURL(session.getScope(), authCallback,
                                                                     session.getState(),
                                                                     ext.isOnlineAccessMode());
             sessionStorage.saveSession(session);
@@ -120,6 +127,7 @@ public class ExtensionController {
     public ResponseEntity authorize(@RequestParam(value = "company_id")String companyId,
                                   @RequestParam(value = "code",required = false) String code,
                                   @RequestParam(value = "state") String state,
+                                    @RequestParam(value = "application_id",required = false) String applicationId,
                                     HttpServletRequest request,
                                     HttpServletResponse response) {
 
@@ -169,6 +177,8 @@ public class ExtensionController {
 
             ExtensionContext.set("fdk-session", fdkSession);
             ExtensionContext.set("extension", ext);
+            ExtensionContext.set("company_id", companyId);
+            ExtensionContext.set("application_id", applicationId);
 
 //            session.setState(UUID.randomUUID()
 //                                 .toString());
