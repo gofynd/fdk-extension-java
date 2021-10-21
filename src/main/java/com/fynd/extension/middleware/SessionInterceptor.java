@@ -2,7 +2,6 @@ package com.fynd.extension.middleware;
 
 import com.fynd.extension.constant.FdkConstants;
 import com.fynd.extension.model.Extension;
-import com.fynd.extension.model.Option;
 import com.fynd.extension.session.Session;
 import com.fynd.extension.session.SessionStorage;
 import com.fynd.extension.utils.ExtensionContext;
@@ -18,7 +17,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.Arrays;
-import java.util.Date;
+import java.util.Optional;
 
 @Component
 public class SessionInterceptor implements HandlerInterceptor {
@@ -32,18 +31,26 @@ public class SessionInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+        Session fdkSession = null;
+        String companyId = !StringUtils.isEmpty(request.getHeader("x-company-id")) ? request.getHeader(
+                "x-company-id") : request.getParameter("company_id");
+        if (!StringUtils.isEmpty(companyId)) {
+            String compCookieName = FdkConstants.SESSION_COOKIE_NAME + "_" + companyId;
+            Optional<Cookie> sessionCookie = Arrays.stream(request.getCookies())
+                                                   .filter(c -> c.getName()
+                                                                 .equals(compCookieName))
+                                                   .findFirst();
+            if (sessionCookie.isPresent()) {
+                String sessionId = sessionCookie
+                        .map(Cookie::getValue)
+                        .orElse(null);
+                fdkSession = sessionStorage.getSession(sessionId);
+            }
+        }
 
-        var companyId = !StringUtils.isEmpty(request.getHeader("x-company-id"))?request.getHeader("x-company-id"):request.getParameter("company_id");
-        String compCookieName = FdkConstants.SESSION_COOKIE_NAME+"_"+companyId;
-        String sessionId = Arrays.stream(request.getCookies())
-                                 .filter(c -> c.getName().equals(compCookieName))
-                                 .findFirst()
-                                 .map(Cookie::getValue)
-                                 .orElse(null);
-        Session fdkSession  = sessionStorage.getSession(sessionId);
-        if(!ObjectUtils.isEmpty(fdkSession)){
-        ExtensionContext.set("fdk-session", fdkSession);
-        return true;
+        if (!ObjectUtils.isEmpty(fdkSession)) {
+            ExtensionContext.set("fdk-session", fdkSession);
+            return true;
         } else {
             throw new ResponseStatusException(
                     HttpStatus.UNAUTHORIZED,
