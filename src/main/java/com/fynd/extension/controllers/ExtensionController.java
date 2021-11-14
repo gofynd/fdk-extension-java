@@ -172,7 +172,8 @@ public class ExtensionController {
                                                      .sameSite("None")
                                                      .secure(true)
                                                      .path("/")
-                                                     .maxAge(Duration.between(Instant.now() ,Instant.ofEpochMilli(fdkSession.getExpires_in())) )
+                                                     /*.maxAge(Duration.between(Instant.now() ,Instant.ofEpochMilli(fdkSession.getExpires_in())) )*/
+                                                     .maxAge(Duration.between(Instant.now() ,Instant.now().plusMillis(token.getExpiresIn() * 1000)) )
                                                      .build();
 
             ExtensionContext.set("fdk-session", fdkSession);
