@@ -17,36 +17,51 @@ public class RedisStorage extends BaseStorage{
 
     @Override
     public String get(String key) {
-        return client.get(this.prefixKey + key);
+
+        String result = client.get(this.prefixKey + key);
+        client.close();
+        return result;
     }
 
     @Override
     public String set(String key,String value) {
-        return client.set(this.prefixKey + key,value);
+        String result = client.set(this.prefixKey + key,value);
+        client.close();
+        return result;
     }
 
     @Override
     public Long del(String key) {
-        return client.del(this.prefixKey + key);
+        Long result =client.del(this.prefixKey + key);
+        client.close();
+        return result;
     }
 
     @Override
     public String setex(String key,int ttl,String value) {
-        return client.setex(this.prefixKey + key,ttl,value);
+        String result = client.setex(this.prefixKey + key,ttl,value);
+        client.close();
+        return result;
     }
 
     @Override
     public String hget(String key,String hashKey) {
-        return client.hget(this.prefixKey + key,hashKey);
+        String result =client.hget(this.prefixKey + key,hashKey);
+        client.close();
+        return result;
     }
 
     @Override
     public Long hset(String key, String hashKey, String value) {
-        return client.hset(this.prefixKey + key,hashKey,value);
+        Long result = client.hset(this.prefixKey + key,hashKey,value);
+        client.close();
+        return result;
     }
 
     @Override
     public Map<String,Object> hgetall(String key) {
-        return (Map)client.hgetAll(this.prefixKey + key);
+        Map<String,Object> result =(Map)client.hgetAll(this.prefixKey + key);
+        client.close();
+        return result;
     }
 }
