@@ -58,7 +58,7 @@ public class ExtensionController {
             if (ext.isOnlineAccessMode()) {
                 session = new Session(Session.generateSessionId(true, null), true);
             } else {
-                sid = Session.generateSessionId(false, new Option(ext.getCluster(), companyId));
+                sid = Session.generateSessionId(false, new Option(companyId, ext.getCluster()));
                 session = sessionStorage.getSession(sid);
                 if (ObjectUtils.isEmpty(session)) {
                     session = new Session(sid, true);

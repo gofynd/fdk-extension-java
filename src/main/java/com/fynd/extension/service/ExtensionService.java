@@ -27,8 +27,8 @@ public class ExtensionService {
         try {
             if (!ext.isOnlineAccessMode()) {
                 String sid = Session.generateSessionId(false, new Option(
-                        ext.getCluster(),
-                        companyId
+                        companyId,
+                        ext.getCluster()
                 ));
                 Session session = sessionStorage.getSession(sid);
                 AccessToken rawToken = new AccessToken();
