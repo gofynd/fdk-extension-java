@@ -7,6 +7,7 @@ import lombok.Setter;
 import org.springframework.beans.BeanUtils;
 
 import java.security.MessageDigest;
+import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 
@@ -60,7 +61,7 @@ public class Session {
                        .toString();
         } else {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            return digest.digest((options.getCluster()+":"+options.getCompany_id()).getBytes()).toString();
+            return Base64.getEncoder().encodeToString(digest.digest((options.getCluster() + ":" + options.getCompany_id()).getBytes()));
         }
     }
 }
