@@ -8,7 +8,7 @@ import java.util.Map;
 @NoArgsConstructor
 public abstract class BaseStorage {
 
-    private String prefixKey;
+    String prefixKey;
 
     public BaseStorage(String prefixKey)
     {

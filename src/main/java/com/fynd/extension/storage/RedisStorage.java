@@ -20,56 +20,49 @@ public class RedisStorage extends BaseStorage{
     public String get(String key) {
 
         try(Jedis client = pool.getResource()) {
-            String result = client.get(this.prefixKey + key);
-            return result;
+            return client.get(super.prefixKey + key);
         }
     }
 
     @Override
     public String set(String key,String value) {
         try(Jedis client = pool.getResource()) {
-            String result = client.set(this.prefixKey + key, value);
-            return result;
+            return client.set(super.prefixKey + key, value);
         }
     }
 
     @Override
     public Long del(String key) {
         try(Jedis client = pool.getResource()) {
-            Long result = client.del(this.prefixKey + key);
-            return result;
+            return client.del(super.prefixKey + key);
         }
     }
 
     @Override
     public String setex(String key,int ttl,String value) {
         try(Jedis client = pool.getResource()) {
-            String result = client.setex(this.prefixKey + key, ttl, value);
-            return result;
+            return client.setex(super.prefixKey + key, ttl, value);
         }
     }
 
     @Override
     public String hget(String key,String hashKey) {
         try(Jedis client = pool.getResource()) {
-            String result = client.hget(this.prefixKey + key, hashKey);
-            return result;
+            return client.hget(super.prefixKey + key, hashKey);
         }
     }
 
     @Override
     public Long hset(String key, String hashKey, String value) {
         try(Jedis client = pool.getResource()) {
-            Long result = client.hset(this.prefixKey + key, hashKey, value);
-            return result;
+            return client.hset(super.prefixKey + key, hashKey, value);
         }
     }
 
     @Override
     public Map<String,Object> hgetall(String key) {
         try(Jedis client = pool.getResource()) {
-            Map<String, Object> result = (Map) client.hgetAll(this.prefixKey + key);
-            return result;
+            return (Map<String, Object>) (Map) client.hgetAll(super.prefixKey + key);
         }
     }
 }
