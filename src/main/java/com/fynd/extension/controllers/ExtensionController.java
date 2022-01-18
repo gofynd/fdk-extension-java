@@ -26,6 +26,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
+import java.util.Objects;
 import java.util.UUID;
 
 @RestController
@@ -62,7 +63,7 @@ public class ExtensionController {
                 session = sessionStorage.getSession(sid);
                 if (ObjectUtils.isEmpty(session)) {
                     session = new Session(sid, true);
-                } else if (session.getExtension_id() != ext.getApi_key()) {
+                } else if (!Objects.equals(session.getExtension_id(), ext.getApi_key())) {
                     session = new Session(sid, true);
                 }
             }
@@ -111,7 +112,7 @@ public class ExtensionController {
                                                                     session.getState(),
                                                                     ext.isOnlineAccessMode());
             sessionStorage.saveSession(session);
-            return ResponseEntity.status(HttpStatus.MOVED_TEMPORARILY)
+            return ResponseEntity.status(HttpStatus.OK)
                                  .header("x-company-id", companyId)
                                  .header(HttpHeaders.LOCATION, redirectUrl)
                                  .header(HttpHeaders.SET_COOKIE, resCookie.toString())
@@ -187,7 +188,7 @@ public class ExtensionController {
                                              .getAuth()
                                              .apply(ExtensionContext.get());
 
-            return ResponseEntity.status(HttpStatus.MOVED_TEMPORARILY)
+            return ResponseEntity.status(HttpStatus.OK)
                                  .header("x-company-id", fdkSession.getCompany_id())
                                  .header(HttpHeaders.LOCATION, redirectUrl)
                                  .header(HttpHeaders.SET_COOKIE, resCookie.toString())
@@ -204,14 +205,12 @@ public class ExtensionController {
                                     HttpServletRequest request,
                                     HttpServletResponse response
                                   ) {
-
         try {
-
             if (!ext.isOnlineAccessMode()) {
                 String sid = Session.generateSessionId(false, new Option(client.getCompany_id(), ext.getCluster()));
                 Session fdkSession = sessionStorage.getSession(sid);
                 AccessToken rawToken = new AccessToken();
-                rawToken.setExpiresIn((long) fdkSession.getExpires_in());
+                rawToken.setExpiresIn(fdkSession.getExpires_in());
                 rawToken.setToken(fdkSession.getAccess_token());
                 rawToken.setRefreshToken(fdkSession.getRefresh_token());
                 PlatformClient platformClient = ext.getPlatformClient(client.getCompany_id(), rawToken);
@@ -228,10 +227,5 @@ public class ExtensionController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                                  .body(new Response(false, error.getMessage()));
         }
-
     }
-
-
-
-
 }
