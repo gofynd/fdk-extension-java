@@ -3,7 +3,14 @@
 FDK Extension Helper Library
 
 #### Initial Setup
-1. Add the dependency in your Maven project pom.xml `'com.github.gofynd:fdk-extension-java:v0.0.2-RELEASE'` in your app pom.xml
+1. Create Maven project and add the dependency in the pom.xml 
+```
+<dependency>
+    <groupId>com.github.gofynd</groupId>
+    <artifactId>fdk-extension-java</artifactId>
+    <version>v0.0.2-RELEASE</version>
+</dependency>
+```
 2. Add the Jitpack Repo to your root pom.xml:
    ```
    <repositories>
