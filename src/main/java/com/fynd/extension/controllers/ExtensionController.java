@@ -112,7 +112,7 @@ public class ExtensionController {
                                                                     session.getState(),
                                                                     ext.isOnlineAccessMode());
             sessionStorage.saveSession(session);
-            return ResponseEntity.status(HttpStatus.OK)
+            return ResponseEntity.status(HttpStatus.PERMANENT_REDIRECT)
                                  .header("x-company-id", companyId)
                                  .header(HttpHeaders.LOCATION, redirectUrl)
                                  .header(HttpHeaders.SET_COOKIE, resCookie.toString())
@@ -188,7 +188,7 @@ public class ExtensionController {
                                              .getAuth()
                                              .apply(ExtensionContext.get());
 
-            return ResponseEntity.status(HttpStatus.OK)
+            return ResponseEntity.status(HttpStatus.PERMANENT_REDIRECT)
                                  .header("x-company-id", fdkSession.getCompany_id())
                                  .header(HttpHeaders.LOCATION, redirectUrl)
                                  .header(HttpHeaders.SET_COOKIE, resCookie.toString())
