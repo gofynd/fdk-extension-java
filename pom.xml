@@ -37,6 +37,14 @@
 			<artifactId>java-uuid-generator</artifactId>
 			<version>3.1.0</version>
 		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/org.json/json -->
+		<dependency>
+			<groupId>org.json</groupId>
+			<artifactId>json</artifactId>
+			<version>20211205</version>
+		</dependency>
+
 		<dependency>
 			<groupId>redis.clients</groupId>
 			<artifactId>jedis</artifactId>
@@ -52,7 +60,7 @@
 		<dependency>
 			<groupId>com.github.gofynd</groupId>
 			<artifactId>fdk-client-java</artifactId>
-			<version>v0.0.12-SNAPSHOT</version>
+			<version>v0.0.14-SNAPSHOT</version>
 		</dependency>
 
 

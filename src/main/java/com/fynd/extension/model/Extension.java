@@ -1,112 +1,113 @@
 package com.fynd.extension.model;
 
-import com.fynd.extension.storage.BaseStorage;
 import com.fynd.extension.error.FdkInvalidExtensionJson;
+import com.fynd.extension.service.WebhookService;
+import com.fynd.extension.storage.BaseStorage;
 import com.sdk.common.AccessToken;
 import com.sdk.platform.PlatformClient;
 import com.sdk.platform.PlatformConfig;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.apache.commons.validator.routines.UrlValidator;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
-import org.springframework.util.StringUtils;
 
+import java.net.URL;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 @Getter
 @Setter
+@NoArgsConstructor
 public class Extension {
 
-    private String api_key;
+    ExtensionProperties extensionProperties;
 
-    private String api_secret;
+    BaseStorage storage;
 
-    private BaseStorage storage;
+    ExtensionCallback callbacks;
 
-    private List<String> scopes;
+    WebhookService webhookService;
 
-    private String base_url;
-
-    private ExtensionCallback callbacks;
-
-    private String access_mode;
-
-    private String cluster = "https://api.fynd.com";
-
-    private Extension() {
-    }
-
-    public static Extension initialize(String api_key, String api_secret, BaseStorage storage,List<String> scopes, String base_url,ExtensionCallback callbacks, String access_mode, String cluster)
-    {
+    public Extension initialize(ExtensionProperties extensionProperties, BaseStorage storage,
+                                ExtensionCallback callbacks) {
         Extension extension = new Extension();
-        String[] schemes = {"http","https"}; // DEFAULT schemes = "http", "https", "ftp"
-        UrlValidator urlValidator = new UrlValidator(schemes);
         extension.setStorage(storage);
 
-        if(StringUtils.isEmpty(api_key)){
-            throw new FdkInvalidExtensionJson("Invalid api_key");
-        }
-        extension.setApi_key(api_key);
-
-        if(StringUtils.isEmpty(api_secret)){
-            throw new FdkInvalidExtensionJson("Invalid api_secret");
-        }
-        extension.setApi_secret(api_secret);
-
-//        if(!urlValidator.isValid(base_url)) {
-//            throw new FdkInvalidExtensionJson("Invalid base_url");
-//        }
-
-        extension.setBase_url(base_url);
-        extension.setScopes(verifyScopes(scopes));
-
-        if(ObjectUtils.isEmpty(callbacks) || ( ObjectUtils.isEmpty(callbacks) && (ObjectUtils.isEmpty(callbacks.getAuth()) || ObjectUtils.isEmpty(callbacks.getInstall()) || ObjectUtils.isEmpty(callbacks.getUninstall())))) {
-            throw new FdkInvalidExtensionJson("Missing some of callbacks. Please add all , auth, install and uninstall callbacks.");
+        if (StringUtils.isEmpty(extensionProperties.getApi_key())) {
+            throw new FdkInvalidExtensionJson("Invalid apiKey");
         }
 
+        if (StringUtils.isEmpty(extensionProperties.getApi_secret())) {
+            throw new FdkInvalidExtensionJson("Invalid apiSecret");
+        }
+
+        if (!isValid(extensionProperties.getBase_url())) {
+            throw new FdkInvalidExtensionJson("Invalid baseUrl");
+        }
+        verifyScopes(extensionProperties.getScopes());
+        if (ObjectUtils.isEmpty(callbacks) || (ObjectUtils.isEmpty(callbacks) &&
+                (ObjectUtils.isEmpty(callbacks.getAuth()) ||
+                        ObjectUtils.isEmpty(callbacks.getInstall()) ||
+                        ObjectUtils.isEmpty(callbacks.getUninstall())))) {
+            throw new FdkInvalidExtensionJson(
+                    "Missing some of callbacks. Please add all , auth, install and uninstall callbacks.");
+        }
         extension.setCallbacks(callbacks);
-        if(StringUtils.isEmpty(access_mode))
-        {
-            extension.setAccess_mode("offline");
-        }else{
-            extension.setAccess_mode(access_mode);
-        }
+        extensionProperties.setAccess_mode(StringUtils.isEmpty(
+                extensionProperties.getAccess_mode()) ? "offline" : extensionProperties.getAccess_mode());
 
-        if(!StringUtils.isEmpty(cluster)) {
-            if(!urlValidator.isValid(cluster)) {
+        if (StringUtils.isNotEmpty(extensionProperties.getCluster())) {
+            if (!isValid(extensionProperties.getCluster())) {
                 throw new FdkInvalidExtensionJson("Invalid cluster");
             }
-            extension.setCluster(cluster);
         }
-
+        extension.setWebhookService(new WebhookService());
+        extension.setExtensionProperties(extensionProperties);
+        if (Objects.nonNull(extensionProperties.getWebhook())) {
+            extension.getWebhookService()
+                     .initialize(extensionProperties);
+        }
+        this.extensionProperties = extensionProperties;
         return extension;
     }
 
-    private static List<String> verifyScopes(List<String> scopes) {
-        if(CollectionUtils.isEmpty(scopes)) {
-            throw new FdkInvalidExtensionJson("Invalid scopes in extension.json");
+    private static void verifyScopes(String scopes) {
+        List<String> scopeList = Arrays.asList(scopes.split("\\s*,\\s*"));
+        if (CollectionUtils.isEmpty(scopeList)) {
+            throw new FdkInvalidExtensionJson("Invalid scopes in extension");
         }
-        return scopes;
     }
 
-    public String getAuthCallback(){
-        return String.format("%s%s",this.base_url,"/fp/auth") ;
+    public String getAuthCallback() {
+        return String.format("%s%s", this.extensionProperties.getBase_url(), "/fp/auth");
     }
 
     public boolean isOnlineAccessMode() {
-        return this.access_mode == "online";
+        return Objects.equals(this.extensionProperties.getAccess_mode(), "online");
     }
 
     public PlatformConfig getPlatformConfig(String companyId) {
-        PlatformConfig platformConfig = new PlatformConfig(companyId,this.api_key,this.api_secret,this.cluster);
-        return platformConfig;
+        return new PlatformConfig(companyId, this.extensionProperties.getApi_key(),
+                                  this.extensionProperties.getApi_secret(), this.extensionProperties.getCluster());
     }
 
     public PlatformClient getPlatformClient(String companyId, AccessToken session) {
-        PlatformConfig platformConfig =  this.getPlatformConfig(companyId);
-        platformConfig.getPlatformOauthClient().setToken(session);
+        PlatformConfig platformConfig = this.getPlatformConfig(companyId);
+        platformConfig.getPlatformOauthClient()
+                      .setToken(session);
         return new PlatformClient(platformConfig);
+    }
+
+    public static boolean isValid(String url) {
+        try {
+            new URL(url).toURI();
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }
 

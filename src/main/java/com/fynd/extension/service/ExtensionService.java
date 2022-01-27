@@ -4,7 +4,6 @@ import com.fynd.extension.model.Extension;
 import com.fynd.extension.model.Option;
 import com.fynd.extension.session.Session;
 import com.fynd.extension.session.SessionStorage;
-import com.fynd.extension.utils.ExtensionContext;
 import com.sdk.application.ApplicationClient;
 import com.sdk.application.ApplicationConfig;
 import com.sdk.common.AccessToken;
@@ -28,7 +27,7 @@ public class ExtensionService {
             if (!ext.isOnlineAccessMode()) {
                 String sid = Session.generateSessionId(false, new Option(
                         companyId,
-                        ext.getCluster()
+                        ext.getExtensionProperties().getCluster()
                 ));
                 Session session = sessionStorage.getSession(sid);
                 AccessToken rawToken = new AccessToken();
@@ -47,9 +46,8 @@ public class ExtensionService {
 
     public ApplicationClient getApplicationClient(String applicationId,String applicationToken){
         ApplicationConfig applicationConfig = new ApplicationConfig(applicationId, applicationToken,
-                                                                    ext.getCluster());
-        ApplicationClient applicationClient = new ApplicationClient(applicationConfig);
-        return applicationClient;
+                                                                    ext.getExtensionProperties().getCluster());
+        return new ApplicationClient(applicationConfig);
     }
 
 }
