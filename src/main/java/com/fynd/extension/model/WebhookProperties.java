@@ -2,18 +2,15 @@ package com.fynd.extension.model;
 
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.HashMap;
+import java.util.List;
 
 @Getter
 @Setter
 public class WebhookProperties {
 
-    String api_path;
-    String notification_email;
-    String subscribed_saleschannel;
-    HashMap<String, String> event_map;
-    Boolean subscribe_on_install;
-
+    private String api_path;
+    private String notification_email;
+    private String subscribed_saleschannel;
+    private List<EventMapProperties> event_map;
+    private Boolean subscribe_on_install;
 }
-
