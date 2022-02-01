@@ -18,6 +18,8 @@
 		<jedis.version>2.8.1</jedis.version>
 		<commons.version>1.5.0</commons.version>
 		<fdk-client.version>v0.0.14-SNAPSHOT</fdk-client.version>
+		<logging.version>3.9.0</logging.version>
+		<okhttp.version>3.0.0-RC1</okhttp.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -69,13 +71,13 @@
 		<dependency>
 			<groupId>com.squareup.okhttp3</groupId>
 			<artifactId>logging-interceptor</artifactId>
-			<version>3.9.0</version>
+			<version>${logging.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>com.squareup.okhttp3</groupId>
 			<artifactId>okhttp-urlconnection</artifactId>
-			<version>3.0.0-RC1</version>
+			<version>${okhttp.version}</version>
 		</dependency>
 
 
