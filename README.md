@@ -20,18 +20,18 @@ FDK Extension Helper Library
         </repository>
     </repositories>
     ```
-3. Mention Extension specific Configuration properties in [Interfaces-config Project](https://gitlab.com/fynd/vision/configurations/interfaces-config)
-    ```
+3. Add Extension specific Configuration properties in application.yml file
+    ```yaml
     redis :
-    host : 'redis://127.0.0.1:6379'
+      host : 'redis://127.0.0.1:6379'
 
     ext :
-    integration_id : <INTEGRATION_ID>
-    api_key : <API_KEY>
-    api_secret : <API_SECRET>
-    scope : 'company/saleschannel'
-    base_url : 'https://test.extension.com'
-    access_mode : 'offline'
+      integration_id : <INTEGRATION_ID>
+      api_key : <API_KEY>
+      api_secret : <API_SECRET>
+      scope : 'company/saleschannel'
+      base_url : 'https://test.extension.com'
+      access_mode : 'offline'
     ```
 4. Create Main Application class and Initialise the Extension using the properties.
 ```java
