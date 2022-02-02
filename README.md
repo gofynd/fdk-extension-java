@@ -38,13 +38,15 @@ FDK Extension Helper Library
 @SpringBootApplication
 @ComponentScan(basePackages = {"com.fynd.**", "com.fynd.**","com.gofynd","com.sdk.**"})
 public class EmailExtensionApplication {
+    
+    private String CACHE_PREFIX_KEY  = "inv_email";
 
     @Autowired
     ExtensionProperties extensionProperties;
 
     @Autowired
     @Qualifier("jedispoolbean")
-    JedisPool jedis;
+    JedisPool jedis; //Library to connect with Redis Cache
 
     ExtensionCallback callbacks = new ExtensionCallback(
             (context) ->
@@ -65,9 +67,11 @@ public class EmailExtensionApplication {
     @Bean
     public com.fynd.extension.model.Extension getExtension() {
         return Extension.initialize(extensionProperties,
-                new RedisStorage(jedis, "inv_email"),
+                new RedisStorage(jedis, CACHE_PREFIX_KEY), //BaseStorage is the parent class, any child class can be used here - REDIS / Memory
                 callbacks);
     }
+    
+    
 }
 ```
 
