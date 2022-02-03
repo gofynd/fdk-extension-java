@@ -8,7 +8,7 @@ FDK Extension Helper Library
 <dependency>
     <groupId>com.github.gofynd</groupId>
     <artifactId>fdk-extension-java</artifactId>
-    <version>v0.0.2-RELEASE</version>
+    <version><LATEST_VERSION></version>
 </dependency>
 ```
 2. Add the Jitpack Repo to your root pom.xml:
@@ -20,31 +20,33 @@ FDK Extension Helper Library
         </repository>
     </repositories>
     ```
-3. Mention Extension specific Configuration properties in [Interfaces-config Project](https://gitlab.com/fynd/vision/configurations/interfaces-config)
-    ```
+3. Add Extension specific Configuration properties in application.yml file
+    ```yaml
     redis :
-    host : 'redis://127.0.0.1:6379'
+      host : 'redis://127.0.0.1:6379'
 
     ext :
-    integration_id : <INTEGRATION_ID>
-    api_key : <API_KEY>
-    api_secret : <API_SECRET>
-    scope : 'company/saleschannel'
-    base_url : 'https://test.extension.com'
-    access_mode : 'offline'
+      integration_id : <INTEGRATION_ID>
+      api_key : <API_KEY>
+      api_secret : <API_SECRET>
+      scope : 'company/saleschannel'
+      base_url : 'https://test.extension.com'
+      access_mode : 'offline'
     ```
 4. Create Main Application class and Initialise the Extension using the properties.
 ```java
 @SpringBootApplication
 @ComponentScan(basePackages = {"com.fynd.**", "com.fynd.**","com.gofynd","com.sdk.**"})
 public class EmailExtensionApplication {
+    
+    private String CACHE_PREFIX_KEY  = "inv_email";
 
     @Autowired
     ExtensionProperties extensionProperties;
 
     @Autowired
     @Qualifier("jedispoolbean")
-    JedisPool jedis;
+    JedisPool jedis; //Library to connect with Redis Cache
 
     ExtensionCallback callbacks = new ExtensionCallback(
             (context) ->
@@ -64,13 +66,12 @@ public class EmailExtensionApplication {
 
     @Bean
     public com.fynd.extension.model.Extension getExtension() {
-        return Extension.initialize(extensionProperties.getApi_key(), extensionProperties.getApi_secret(),
-                                             new RedisStorage(jedis, "inv_email"),
-                                             List.of(extensionProperties.getScope()),
-                                             extensionProperties.getBase_url(),
-                                             callbacks, extensionProperties.getAccess_mode(),
-                                             "https://api.fyndx1.de");  // this is optional by default it points to prod.
+        return Extension.initialize(extensionProperties,
+                new RedisStorage(jedis, CACHE_PREFIX_KEY), //BaseStorage is the parent class, any child class can be used here - REDIS / Memory
+                callbacks);
     }
+    
+    
 }
 ```
 
@@ -129,3 +130,87 @@ public class Service {
             Integer.valueOf(session.getCompany_id()));
 }
 ```
+
+#### How to register for Webhook Events?
+Webhook events can be helpful to handle tasks when certain events occur on platform. You can subscribe to such events by passing **webhook** in Extension Configuration Property
+
+1. Add the Configuration property in Extension yaml File
+
+```yaml
+webhook:
+  api_path: "/webhook" #<POST API URL>
+  notification_email: "<EMAIL_ID>"
+  subscribe_on_install: false, #optional. Default true
+  subscribed_saleschannel: 'all' #Can be 'SPECIFIC'/'EMPTY'
+  event_map:
+    -
+      name: 'extension/install'
+      handler: extensionInstallHandler #Make sure this matches the Component Bean name
+    -
+      name: 'product/update'
+      handler: productCreateHandler
+    -
+      name: 'product/update'
+      handler: productCreateApplicationHandler
+      category: 'application' # optional unless multiple event with same name are present at company and saleschannel
+
+```
+
+2. Create Handlers for each event which is mentioned in the Event Map (as specified above)
+
+```java
+import com.fynd.extension.middleware.EventHandler;
+
+@Component("extensionInstallHandler")
+public class ExtensionInstallHandler extends EventHandler {
+
+   @java.lang.Override
+   public void handle(String eventName, Object body, String companyId, String applicationId) {
+      //Write Business logic here
+   }
+}
+```
+
+> By default all webhook events all subscribed for all companies whenever they are installed. To disable this behavior set `subscribe_on_install` to `false`. If `subscribe_on_install` is set to false, you need to manually enable webhook event subscription by calling `syncEvents` method of `webhookRegistry`
+
+There should be view on given api path to receive webhook call. It should be `POST` api path. Api view should call `processWebhook` method of `webhookRegistry` object available under `fdkClient` here.
+
+> Here `processWebhook` will do payload validation with signature and calls individual handlers for event passed with webhook config.
+
+```java
+@CrossOrigin(origins = "*")
+@RestController
+@RequestMapping()
+@Slf4j
+public class WebhookController {
+
+   @Autowired
+   WebhookService webhookService;
+
+   @PostMapping(path = "/webhook")
+   public Map<String, Boolean> receiveWebhookEvents(HttpServletRequest httpServletRequest) {
+      try {
+         webhookService.processWebhook(httpServletRequest);
+         return new Collections.singletonMap("success", true);
+      } catch (Exception e) {
+         log.error("Exception occurred", e);
+         return new Collections.singletonMap("success", false);
+      }
+   }
+}
+```
+
+> Setting `subscribed_saleschannel` as "specific" means, you will have to manually subscribe saleschannel level event for individual saleschannel. Default value here is "all" and event will be subscribed for all sales channels. 
+
+> For enabling events manually use function `enableSalesChannelWebhook`
+> 
+> To disable receiving events for a saleschannel use function `disableSalesChannelWebhook`.
+
+
+##### How webhook registry subscribes to webhooks on Fynd Platform?
+After webhook config is passed to initialize whenever extension is launched to any of companies where extension is installed or to be installed, webhook config data is used to create webhook subscriber on Fynd Platform for that company.
+
+> Any update to webhook config will not automatically update subscriber data on Fynd Platform for a company until extension is opened atleast once after the update.
+
+Other way to update webhook config manually for a company is to call `syncEvents` function of webhookRegistery.   
+

@@ -14,9 +14,11 @@ import com.fynd.extension.utils.ExtensionContext;
 import com.sdk.common.AccessToken;
 import com.sdk.platform.PlatformClient;
 import com.sdk.platform.PlatformConfig;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.*;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -25,6 +27,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Objects;
 import java.util.UUID;
@@ -33,19 +36,17 @@ import java.util.UUID;
 @RequestMapping("/fp")
 public class ExtensionController {
 
-
     @Autowired
     Extension ext;
 
     @Autowired
     SessionStorage sessionStorage;
 
-
     @GetMapping(path = "/install")
-    public ResponseEntity install(@RequestParam(value = "company_id") String companyId,
-                                  @RequestParam(value = "application_id",required = false) String applicationId,
-                                  HttpServletResponse response,
-                                  HttpServletRequest request) {
+    public ResponseEntity<?> install(@RequestParam(value = "company_id") String companyId,
+                                     @RequestParam(value = "application_id", required = false) String applicationId,
+                                     HttpServletResponse response,
+                                     HttpServletRequest request) {
 
         try {
             if (StringUtils.isEmpty(companyId)) {
@@ -59,25 +60,34 @@ public class ExtensionController {
             if (ext.isOnlineAccessMode()) {
                 session = new Session(Session.generateSessionId(true, null), true);
             } else {
-                sid = Session.generateSessionId(false, new Option(companyId, ext.getCluster()));
+                sid = Session.generateSessionId(false, new Option(companyId,
+                                                                  ext.getExtensionProperties()
+                                                                     .getCluster()));
                 session = sessionStorage.getSession(sid);
                 if (ObjectUtils.isEmpty(session)) {
                     session = new Session(sid, true);
-                } else if (!Objects.equals(session.getExtension_id(), ext.getApi_key())) {
+                } else if (!Objects.equals(session.getExtension_id(),
+                                           ext.getExtensionProperties()
+                                              .getApi_key())) {
                     session = new Session(sid, true);
                 }
             }
 
-            Date sessionExpires = Date.from(Instant.now().plusMillis(900000));
+            Date sessionExpires = Date.from(Instant.now()
+                                                   .plusMillis(900000));
 
             if (session.isNew()) {
                 session.setCompany_id(companyId);
-                session.setScope(ext.getScopes());
+                session.setScope(Arrays.asList(ext.getExtensionProperties()
+                                                  .getScopes()
+                                                  .split("\\s*,\\s*")));
                 session.setExpires(FdkConstants.DATE_FORMAT.get()
                                                            .format(sessionExpires));
                 session.setExpires_in(sessionExpires.getTime());
-                session.setAccess_mode(ext.getAccess_mode());
-                session.setExtension_id(ext.getApi_key());
+                session.setAccess_mode(ext.getExtensionProperties()
+                                          .getAccess_mode());
+                session.setExtension_id(ext.getExtensionProperties()
+                                           .getApi_key());
             } else {
                 if (!StringUtils.isEmpty(session.getExpires())) {
                     session.setExpires(FdkConstants.DATE_FORMAT.get()
@@ -88,13 +98,14 @@ public class ExtensionController {
 
             ExtensionContext.set("fdk-session", session);
             ExtensionContext.set("extension", ext);
-            String compCookieName = FdkConstants.SESSION_COOKIE_NAME+"_"+companyId;
+            String compCookieName = FdkConstants.SESSION_COOKIE_NAME + "_" + companyId;
             ResponseCookie resCookie = ResponseCookie.from(compCookieName, session.getId())
                                                      .httpOnly(true)
                                                      .sameSite("None")
                                                      .secure(true)
                                                      .path("/")
-                                                     .maxAge(Duration.between(Instant.now() ,Instant.ofEpochMilli(session.getExpires_in())) )
+                                                     .maxAge(Duration.between(Instant.now(), Instant.ofEpochMilli(
+                                                             session.getExpires_in())))
                                                      .build();
 
 
@@ -103,8 +114,8 @@ public class ExtensionController {
 
             // pass application id if received
             String authCallback = ext.getAuthCallback();
-            if(!StringUtils.isEmpty(applicationId)) {
-                authCallback += "?application_id="+applicationId;
+            if (!StringUtils.isEmpty(applicationId)) {
+                authCallback += "?application_id=" + applicationId;
             }
             // start authorization flow
             String redirectUrl = platformConfig.getPlatformOauthClient()
@@ -112,7 +123,7 @@ public class ExtensionController {
                                                                     session.getState(),
                                                                     ext.isOnlineAccessMode());
             sessionStorage.saveSession(session);
-            return ResponseEntity.status(HttpStatus.OK)
+            return ResponseEntity.status(HttpStatus.PERMANENT_REDIRECT)
                                  .header("x-company-id", companyId)
                                  .header(HttpHeaders.LOCATION, redirectUrl)
                                  .header(HttpHeaders.SET_COOKIE, resCookie.toString())
@@ -125,12 +136,12 @@ public class ExtensionController {
     }
 
     @GetMapping(path = "/auth")
-    public ResponseEntity authorize(@RequestParam(value = "company_id")String companyId,
-                                  @RequestParam(value = "code",required = false) String code,
-                                  @RequestParam(value = "state") String state,
-                                    @RequestParam(value = "application_id",required = false) String applicationId,
-                                    HttpServletRequest request,
-                                    HttpServletResponse response) {
+    public ResponseEntity<?> authorize(@RequestParam(value = "company_id") String companyId,
+                                       @RequestParam(value = "code", required = false) String code,
+                                       @RequestParam(value = "state") String state,
+                                       @RequestParam(value = "application_id", required = false) String applicationId,
+                                       HttpServletRequest request,
+                                       HttpServletResponse response) {
 
         try {
             if (!ExtensionContext.isPresent("fdk-session")) {
@@ -150,7 +161,8 @@ public class ExtensionController {
             AccessToken token = platformConfig.getPlatformOauthClient()
                                               .getRawToken();
 
-            Date sessionExpires = Date.from(Instant.now().plusMillis(token.getExpiresIn() * 1000));
+            Date sessionExpires = Date.from(Instant.now()
+                                                   .plusMillis(token.getExpiresIn() * 1000));
 
             if (ext.isOnlineAccessMode()) {
                 fdkSession.setExpires(FdkConstants.DATE_FORMAT.get()
@@ -166,29 +178,39 @@ public class ExtensionController {
             fdkSession.setRefresh_token(token.getRefreshToken());
             sessionStorage.saveSession(fdkSession);
 
-            String compCookieName = FdkConstants.SESSION_COOKIE_NAME+"_"+fdkSession.getCompany_id();
+            String compCookieName = FdkConstants.SESSION_COOKIE_NAME + "_" + fdkSession.getCompany_id();
             ResponseCookie resCookie = ResponseCookie.from(compCookieName,
                                                            fdkSession.getId())
                                                      .httpOnly(true)
                                                      .sameSite("None")
                                                      .secure(true)
                                                      .path("/")
-                                                     .maxAge(Duration.between(Instant.now() ,Instant.ofEpochMilli(fdkSession.getExpires_in())) )
+                                                     .maxAge(Duration.between(Instant.now(), Instant.ofEpochMilli(
+                                                             fdkSession.getExpires_in())))
                                                      .build();
 
             ExtensionContext.set("fdk-session", fdkSession);
             ExtensionContext.set("extension", ext);
             ExtensionContext.set("company_id", companyId);
             ExtensionContext.set("application_id", applicationId);
-
-//            session.setState(UUID.randomUUID()
-//                                 .toString());
+            if (Objects.nonNull(ext.getWebhookService()) &&
+                    Objects.nonNull(ext.getExtensionProperties()
+                                       .getWebhook()
+                                       .getSubscribe_on_install()) &&
+                    ext.getExtensionProperties()
+                       .getWebhook()
+                       .getSubscribe_on_install()
+                       .equals(Boolean.TRUE)) {
+                PlatformClient platformClient = ext.getPlatformClient(companyId, token);
+                ext.getWebhookService()
+                   .syncEvents(platformClient, null);
+            }
 
             String redirectUrl = ext.getCallbacks()
-                                             .getAuth()
-                                             .apply(ExtensionContext.get());
+                                    .getAuth()
+                                    .apply(ExtensionContext.get());
 
-            return ResponseEntity.status(HttpStatus.OK)
+            return ResponseEntity.status(HttpStatus.PERMANENT_REDIRECT)
                                  .header("x-company-id", fdkSession.getCompany_id())
                                  .header(HttpHeaders.LOCATION, redirectUrl)
                                  .header(HttpHeaders.SET_COOKIE, resCookie.toString())
@@ -201,13 +223,15 @@ public class ExtensionController {
     }
 
     @PostMapping(path = "/uninstall")
-    public ResponseEntity uninstall(@RequestBody Client client,
-                                    HttpServletRequest request,
-                                    HttpServletResponse response
-                                  ) {
+    public ResponseEntity<?> uninstall(@RequestBody Client client,
+                                       HttpServletRequest request,
+                                       HttpServletResponse response
+    ) {
         try {
             if (!ext.isOnlineAccessMode()) {
-                String sid = Session.generateSessionId(false, new Option(client.getCompany_id(), ext.getCluster()));
+                String sid = Session.generateSessionId(false,
+                                                       new Option(client.getCompany_id(), ext.getExtensionProperties()
+                                                                                             .getCluster()));
                 Session fdkSession = sessionStorage.getSession(sid);
                 AccessToken rawToken = new AccessToken();
                 rawToken.setExpiresIn(fdkSession.getExpires_in());
