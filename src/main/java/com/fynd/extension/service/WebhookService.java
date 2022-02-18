@@ -35,7 +35,7 @@ public class WebhookService {
     String associationCriteria;
     WebhookProperties webhookProperties;
 
-    @Autowired
+    @Autowired(required = false)
     Map<String, EventHandler> eventHandlerMap;
 
     @Autowired
