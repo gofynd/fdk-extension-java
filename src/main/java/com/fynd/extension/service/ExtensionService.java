@@ -1,5 +1,6 @@
 package com.fynd.extension.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fynd.extension.model.Extension;
 import com.fynd.extension.model.Option;
 import com.fynd.extension.session.Session;
@@ -8,11 +9,15 @@ import com.sdk.application.ApplicationClient;
 import com.sdk.application.ApplicationConfig;
 import com.sdk.common.AccessToken;
 import com.sdk.platform.PlatformClient;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Objects;
+
 
 @Service
+@Slf4j
 public class ExtensionService {
 
     @Autowired
@@ -23,18 +28,27 @@ public class ExtensionService {
 
     public PlatformClient getPlatformClient(String companyId){
         PlatformClient client = null;
+        ObjectMapper objectMapper = new ObjectMapper();
         try {
-            if (!ext.isOnlineAccessMode()) {
+            if (!this.ext.isOnlineAccessMode()) {
+                log.info("CompanyId : "+companyId);
+                log.info("Extension : "+objectMapper.writeValueAsString(this.ext));
+                log.info("Extension props: " + objectMapper.writeValueAsString(this.ext.getExtensionProperties()));
+                log.info("Cluster: " + objectMapper.writeValueAsString(this.ext.getExtensionProperties().getCluster()));
                 String sid = Session.generateSessionId(false, new Option(
                         companyId,
-                        ext.getExtensionProperties().getCluster()
+                        this.ext.getExtensionProperties().getCluster()
                 ));
+                log.info("Session ID : "+ sid);
                 Session session = sessionStorage.getSession(sid);
-                AccessToken rawToken = new AccessToken();
-                rawToken.setExpiresIn((session.getExpires_in()));
-                rawToken.setToken(session.getAccess_token());
-                rawToken.setRefreshToken(session.getRefresh_token());
-                client = ext.getPlatformClient(companyId, rawToken);
+                log.info("Session : "+ objectMapper.writeValueAsString(session));
+                if(Objects.nonNull(session)) {
+                    AccessToken rawToken = new AccessToken();
+                    rawToken.setExpiresIn((session.getExpires_in()));
+                    rawToken.setToken(session.getAccess_token());
+                    rawToken.setRefreshToken(session.getRefresh_token());
+                    client = this.ext.getPlatformClient(companyId, rawToken);
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
