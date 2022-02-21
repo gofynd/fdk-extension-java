@@ -35,6 +35,7 @@ public class Extension {
                                 ExtensionCallback callbacks) {
         Extension extension = new Extension();
         extension.setStorage(storage);
+        extension.setExtensionProperties(extensionProperties);
 
         if (StringUtils.isEmpty(extensionProperties.getApi_key())) {
             throw new FdkInvalidExtensionJson("Invalid apiKey");

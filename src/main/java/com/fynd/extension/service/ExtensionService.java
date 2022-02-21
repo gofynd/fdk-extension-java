@@ -1,6 +1,7 @@
 package com.fynd.extension.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fynd.extension.model.Extension;
 import com.fynd.extension.model.Option;
 import com.fynd.extension.session.Session;
@@ -29,6 +30,7 @@ public class ExtensionService {
     public PlatformClient getPlatformClient(String companyId){
         PlatformClient client = null;
         ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         try {
             if (!this.ext.isOnlineAccessMode()) {
                 log.info("CompanyId : "+companyId);
