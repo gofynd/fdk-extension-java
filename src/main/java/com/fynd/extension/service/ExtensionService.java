@@ -29,21 +29,15 @@ public class ExtensionService {
 
     public PlatformClient getPlatformClient(String companyId){
         PlatformClient client = null;
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         try {
             if (!this.ext.isOnlineAccessMode()) {
                 log.info("CompanyId : "+companyId);
-                log.info("Extension : "+objectMapper.writeValueAsString(this.ext));
-                log.info("Extension props: " + objectMapper.writeValueAsString(this.ext.getExtensionProperties()));
-                log.info("Cluster: " + objectMapper.writeValueAsString(this.ext.getExtensionProperties().getCluster()));
                 String sid = Session.generateSessionId(false, new Option(
                         companyId,
                         this.ext.getExtensionProperties().getCluster()
                 ));
                 log.info("Session ID : "+ sid);
                 Session session = sessionStorage.getSession(sid);
-                log.info("Session : "+ objectMapper.writeValueAsString(session));
                 if(Objects.nonNull(session)) {
                     AccessToken rawToken = new AccessToken();
                     rawToken.setExpiresIn((session.getExpires_in()));
