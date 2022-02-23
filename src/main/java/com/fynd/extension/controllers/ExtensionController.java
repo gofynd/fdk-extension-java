@@ -14,6 +14,7 @@ import com.fynd.extension.utils.ExtensionContext;
 import com.sdk.common.AccessToken;
 import com.sdk.platform.PlatformClient;
 import com.sdk.platform.PlatformConfig;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -34,6 +35,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/fp")
+@Slf4j
 public class ExtensionController {
 
     @Autowired
@@ -129,6 +131,7 @@ public class ExtensionController {
                                  .header(HttpHeaders.SET_COOKIE, resCookie.toString())
                                  .build();
         } catch (Exception error) {
+            log.error("Exception in install call ", error);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                                  .body(new Response(false, error.getMessage()));
         }
@@ -170,10 +173,9 @@ public class ExtensionController {
             } else {
                 fdkSession.setExpires(null);
             }
-
             fdkSession.setAccess_token(token.getToken());
             fdkSession.setExpires_in(token.getExpiresIn());
-            fdkSession.setAccess_token_validity("" + sessionExpires.getTime());
+            fdkSession.setAccess_token_validity(sessionExpires.getTime());
             //fdkSession.setCurrent_user(token.current_user);
             fdkSession.setRefresh_token(token.getRefreshToken());
             sessionStorage.saveSession(fdkSession);
@@ -216,6 +218,7 @@ public class ExtensionController {
                                  .header(HttpHeaders.SET_COOKIE, resCookie.toString())
                                  .build();
         } catch (Exception error) {
+            log.error("Exception in auth call ", error);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                                  .body(new Response(false, error.getMessage()));
         }
@@ -248,6 +251,7 @@ public class ExtensionController {
             return ResponseEntity.status(HttpStatus.OK)
                                  .body(new Response(true));
         } catch (Exception error) {
+            log.error("Exception in uninstall call ", error);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                                  .body(new Response(false, error.getMessage()));
         }

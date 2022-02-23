@@ -28,7 +28,7 @@ public class Session {
 
     private long expires_in;
 
-    private String access_token_validity;
+    private long access_token_validity;
 
     private String access_mode = "online";
 
