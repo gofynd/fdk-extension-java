@@ -196,6 +196,7 @@ public class ExtensionController {
             ExtensionContext.set("company_id", companyId);
             ExtensionContext.set("application_id", applicationId);
             if (Objects.nonNull(ext.getWebhookService()) &&
+                    Objects.nonNull(ext.getExtensionProperties().getWebhook()) &&
                     Objects.nonNull(ext.getExtensionProperties()
                                        .getWebhook()
                                        .getSubscribe_on_install()) &&
