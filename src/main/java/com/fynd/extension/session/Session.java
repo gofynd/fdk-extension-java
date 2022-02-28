@@ -47,21 +47,21 @@ public class Session {
         this.isNew = isNew;
     }
 
-    public static Session cloneSession(String id, Session session,boolean isNew)
-    {
+    public static Session cloneSession(String id, Session session, boolean isNew) {
         Session newSession = new Session(id, isNew);
-        BeanUtils.copyProperties(session,newSession);
+        BeanUtils.copyProperties(session, newSession);
         return newSession;
     }
 
-    public static String generateSessionId(boolean isOnline, Option options)throws Exception
-    {
-        if(isOnline) {
+    public static String generateSessionId(boolean isOnline, Option options) throws Exception {
+        if (isOnline) {
             return UUID.randomUUID()
                        .toString();
         } else {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            return Base64.getEncoder().encodeToString(digest.digest((options.getCluster() + ":" + options.getCompany_id()).getBytes()));
+            return Base64.getEncoder()
+                         .encodeToString(
+                                 digest.digest((options.getCluster() + ":" + options.getCompany_id()).getBytes()));
         }
     }
 }

@@ -103,7 +103,7 @@ public class Extension {
         platformConfig.getPlatformOauthClient()
                       .setToken(session);
         if(session.getExpiresIn()!=0) {
-            if (((session.getExpiresIn() - new Date().getTime()) / 1000) <= 120) {
+            if (((session.getExpiresIn() - new Date().getTime()) / 1000) <= Fields.MIN_TIME_MILLIS) {
                 try {
                     log.info("Renewing access token for company : " + companyId);
                     platformConfig.getPlatformOauthClient().renewAccesstoken();
@@ -123,6 +123,10 @@ public class Extension {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    interface Fields {
+        int MIN_TIME_MILLIS = 120;
     }
 }
 

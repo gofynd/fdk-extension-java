@@ -1,7 +1,5 @@
 package com.fynd.extension.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fynd.extension.model.Extension;
 import com.fynd.extension.model.Option;
 import com.fynd.extension.session.Session;
@@ -27,18 +25,16 @@ public class ExtensionService {
     @Autowired
     SessionStorage sessionStorage;
 
-    public PlatformClient getPlatformClient(String companyId){
+    public PlatformClient getPlatformClient(String companyId) {
         PlatformClient client = null;
         try {
             if (!this.ext.isOnlineAccessMode()) {
-                log.info("CompanyId : "+companyId);
-                String sid = Session.generateSessionId(false, new Option(
-                        companyId,
-                        this.ext.getExtensionProperties().getCluster()
-                ));
-                log.info("Session ID : "+ sid);
+                log.info("CompanyId : " + companyId);
+                String sid = Session.generateSessionId(false, new Option(companyId, this.ext.getExtensionProperties()
+                                                                                            .getCluster()));
+                log.info("Session ID : " + sid);
                 Session session = sessionStorage.getSession(sid);
-                if(Objects.nonNull(session)) {
+                if (Objects.nonNull(session)) {
                     AccessToken rawToken = new AccessToken();
                     rawToken.setExpiresIn((session.getExpires_in()));
                     rawToken.setToken(session.getAccess_token());
@@ -47,16 +43,16 @@ public class ExtensionService {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Exception in getting Platform Client : ", e);
         }
         return client;
     }
 
 
-
-    public ApplicationClient getApplicationClient(String applicationId,String applicationToken){
+    public ApplicationClient getApplicationClient(String applicationId, String applicationToken) {
         ApplicationConfig applicationConfig = new ApplicationConfig(applicationId, applicationToken,
-                                                                    ext.getExtensionProperties().getCluster());
+                                                                    ext.getExtensionProperties()
+                                                                       .getCluster());
         return new ApplicationClient(applicationConfig);
     }
 
