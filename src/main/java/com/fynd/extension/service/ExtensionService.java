@@ -8,11 +8,15 @@ import com.sdk.application.ApplicationClient;
 import com.sdk.application.ApplicationConfig;
 import com.sdk.common.AccessToken;
 import com.sdk.platform.PlatformClient;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Objects;
+
 
 @Service
+@Slf4j
 public class ExtensionService {
 
     @Autowired
@@ -21,32 +25,34 @@ public class ExtensionService {
     @Autowired
     SessionStorage sessionStorage;
 
-    public PlatformClient getPlatformClient(String companyId){
+    public PlatformClient getPlatformClient(String companyId) {
         PlatformClient client = null;
         try {
-            if (!ext.isOnlineAccessMode()) {
-                String sid = Session.generateSessionId(false, new Option(
-                        companyId,
-                        ext.getExtensionProperties().getCluster()
-                ));
+            if (!this.ext.isOnlineAccessMode()) {
+                log.info("CompanyId : " + companyId);
+                String sid = Session.generateSessionId(false, new Option(companyId, this.ext.getExtensionProperties()
+                                                                                            .getCluster()));
+                log.info("Session ID : " + sid);
                 Session session = sessionStorage.getSession(sid);
-                AccessToken rawToken = new AccessToken();
-                rawToken.setExpiresIn((session.getExpires_in()));
-                rawToken.setToken(session.getAccess_token());
-                rawToken.setRefreshToken(session.getRefresh_token());
-                client = ext.getPlatformClient(companyId, rawToken);
+                if (Objects.nonNull(session)) {
+                    AccessToken rawToken = new AccessToken();
+                    rawToken.setExpiresIn((session.getExpires_in()));
+                    rawToken.setToken(session.getAccess_token());
+                    rawToken.setRefreshToken(session.getRefresh_token());
+                    client = this.ext.getPlatformClient(companyId, rawToken);
+                }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Exception in getting Platform Client : ", e);
         }
         return client;
     }
 
 
-
-    public ApplicationClient getApplicationClient(String applicationId,String applicationToken){
+    public ApplicationClient getApplicationClient(String applicationId, String applicationToken) {
         ApplicationConfig applicationConfig = new ApplicationConfig(applicationId, applicationToken,
-                                                                    ext.getExtensionProperties().getCluster());
+                                                                    ext.getExtensionProperties()
+                                                                       .getCluster());
         return new ApplicationClient(applicationConfig);
     }
 

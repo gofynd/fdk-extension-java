@@ -2,9 +2,8 @@ package com.fynd.extension.middleware;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fynd.extension.model.Application;
-import com.fynd.extension.model.User;
-import com.fynd.extension.model.Extension;
 import com.fynd.extension.model.Response;
+import com.fynd.extension.model.User;
 import com.fynd.extension.utils.ExtensionContext;
 import com.sdk.application.ApplicationClient;
 import com.sdk.application.ApplicationConfig;
@@ -18,11 +17,10 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-@Component
-public class ApplicationInterceptor  implements HandlerInterceptor {
+import static com.fynd.extension.utils.ExtensionContext.Keys.*;
 
-    @Autowired
-    Extension extension;
+@Component
+public class ApplicationInterceptor implements HandlerInterceptor {
 
     @Autowired
     ObjectMapper objectMapper;
@@ -31,24 +29,29 @@ public class ApplicationInterceptor  implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
 
         try {
-            if(!StringUtils.isEmpty(request.getHeader("x-user-data"))) {
-                User user = objectMapper.readValue(request.getHeader("x-user-data"), User.class);
-                ExtensionContext.set("x-user-data", user );
+            if (!StringUtils.isEmpty(request.getHeader(Fields.X_USER_DATA))) {
+                User user = objectMapper.readValue(request.getHeader(Fields.X_USER_DATA), User.class);
+                ExtensionContext.set(Fields.X_USER_DATA, user);
 //                    req.user.user_id = req.user._id;
             }
-            if(!StringUtils.isEmpty(request.getHeader("x-application-data")))
-            {
-                Application application = objectMapper.readValue(request.getHeader("x-application-data"), Application.class);
-                ExtensionContext.set("application",application) ;
-                ApplicationConfig applicationConfig = new ApplicationConfig(application.getID(), application.getToken());
-                ExtensionContext.set("application-config",applicationConfig);
-                ExtensionContext.set("application-client",new ApplicationClient(applicationConfig));
+            if (!StringUtils.isEmpty(request.getHeader(Fields.X_APPLICATION_DATA))) {
+                Application application = objectMapper.readValue(request.getHeader(Fields.X_APPLICATION_DATA),
+                                                                 Application.class);
+                ExtensionContext.set(APPLICATION, application);
+                ApplicationConfig applicationConfig = new ApplicationConfig(application.getID(),
+                                                                            application.getToken());
+                ExtensionContext.set(APPLICATION_CONFIG, applicationConfig);
+                ExtensionContext.set(APPLICATION_CLIENT, new ApplicationClient(applicationConfig));
             }
             return true;
         } catch (Exception error) {
-            throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    new Response(false, error.getMessage()).toString());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                                              new Response(false, error.getMessage()).toString());
         }
+    }
+
+    interface Fields {
+        String X_USER_DATA = "x-user-data";
+        String X_APPLICATION_DATA = "x-application-data";
     }
 }

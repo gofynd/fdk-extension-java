@@ -1,7 +1,6 @@
 package com.fynd.extension.middleware;
 
 import com.fynd.extension.constant.FdkConstants;
-import com.fynd.extension.model.Extension;
 import com.fynd.extension.session.Session;
 import com.fynd.extension.session.SessionStorage;
 import com.fynd.extension.utils.ExtensionContext;
@@ -19,21 +18,21 @@ import javax.servlet.http.HttpServletResponse;
 import java.util.Arrays;
 import java.util.Optional;
 
+import static com.fynd.extension.controllers.ExtensionController.Fields.X_COMPANY_ID;
+import static com.fynd.extension.utils.ExtensionContext.Keys.COMPANY_ID;
+import static com.fynd.extension.utils.ExtensionContext.Keys.FDK_SESSION;
+
 @Component
 public class SessionInterceptor implements HandlerInterceptor {
 
     @Autowired
-    Extension extension;
-
-    @Autowired
     SessionStorage sessionStorage;
-
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         Session fdkSession = null;
-        String companyId = !StringUtils.isEmpty(request.getHeader("x-company-id")) ? request.getHeader(
-                "x-company-id") : request.getParameter("company_id");
+        String companyId = !StringUtils.isEmpty(request.getHeader(X_COMPANY_ID)) ? request.getHeader(
+                X_COMPANY_ID) : request.getParameter(COMPANY_ID);
         if (!StringUtils.isEmpty(companyId)) {
             String compCookieName = FdkConstants.SESSION_COOKIE_NAME + "_" + companyId;
             Optional<Cookie> sessionCookie = Arrays.stream(request.getCookies())
@@ -41,20 +40,17 @@ public class SessionInterceptor implements HandlerInterceptor {
                                                                  .equals(compCookieName))
                                                    .findFirst();
             if (sessionCookie.isPresent()) {
-                String sessionId = sessionCookie
-                        .map(Cookie::getValue)
-                        .orElse(null);
+                String sessionId = sessionCookie.map(Cookie::getValue)
+                                                .orElse(null);
                 fdkSession = sessionStorage.getSession(sessionId);
             }
         }
 
         if (!ObjectUtils.isEmpty(fdkSession)) {
-            ExtensionContext.set("fdk-session", fdkSession);
+            ExtensionContext.set(FDK_SESSION, fdkSession);
             return true;
         } else {
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED,
-                    "unauthorized");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "unauthorized");
         }
     }
 

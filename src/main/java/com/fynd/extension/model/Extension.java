@@ -9,18 +9,21 @@ import com.sdk.platform.PlatformConfig;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
 import java.net.URL;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
 @Getter
 @Setter
 @NoArgsConstructor
+@Slf4j
 public class Extension {
 
     ExtensionProperties extensionProperties;
@@ -35,6 +38,7 @@ public class Extension {
                                 ExtensionCallback callbacks) {
         Extension extension = new Extension();
         extension.setStorage(storage);
+        extension.setExtensionProperties(extensionProperties);
 
         if (StringUtils.isEmpty(extensionProperties.getApi_key())) {
             throw new FdkInvalidExtensionJson("Invalid apiKey");
@@ -98,6 +102,17 @@ public class Extension {
         PlatformConfig platformConfig = this.getPlatformConfig(companyId);
         platformConfig.getPlatformOauthClient()
                       .setToken(session);
+        if(session.getExpiresIn()!=0) {
+            if (((session.getExpiresIn() - new Date().getTime()) / 1000) <= Fields.MIN_TIME_MILLIS) {
+                try {
+                    log.info("Renewing access token for company : " + companyId);
+                    platformConfig.getPlatformOauthClient().renewAccesstoken();
+                    log.info("Access token renewed for company : " + companyId);
+                } catch (Exception e) {
+                    log.error("Exception occurred in renewing access token ", e);
+                }
+            }
+        }
         return new PlatformClient(platformConfig);
     }
 
@@ -108,6 +123,10 @@ public class Extension {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    interface Fields {
+        int MIN_TIME_MILLIS = 120;
     }
 }
 

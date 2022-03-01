@@ -11,8 +11,8 @@ import lombok.Setter;
 public class Website {
 
     @JsonProperty("enabled")
-    Boolean Enabled ;
+    Boolean Enabled;
 
     @JsonProperty("basepath")
-    String Basepath ;
+    String Basepath;
 }

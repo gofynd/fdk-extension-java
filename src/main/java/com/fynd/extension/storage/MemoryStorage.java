@@ -7,7 +7,7 @@ public class MemoryStorage extends BaseStorage {
 
     private String prefixKey;
 
-    private Map<String,Object> data = new HashMap<>();
+    private Map<String, Object> data = new HashMap<>();
 
     public MemoryStorage(String prefixKey) {
         super(prefixKey);
@@ -31,24 +31,24 @@ public class MemoryStorage extends BaseStorage {
 
     @Override
     public String setex(String key, int ttl, String value) {
-        return (String) data.put(this.prefixKey + key,value);
+        return (String) data.put(this.prefixKey + key, value);
     }
 
     @Override
     public String hget(String key, String hashKey) {
-        Map<String, Object> hashMap = (HashMap<String, Object>)data.get(this.prefixKey + key);
+        Map<String, Object> hashMap = (HashMap<String, Object>) data.get(this.prefixKey + key);
         return (String) hashMap.get(hashKey);
     }
 
     @Override
     public Object hset(String key, String hashKey, String value) {
-        Map<String, Object> hashMap = (HashMap<String, Object>)data.get(this.prefixKey + key);
-        hashMap.put(hashKey,value);
-        return data.put(this.prefixKey + key,hashMap);
+        Map<String, Object> hashMap = (HashMap<String, Object>) data.get(this.prefixKey + key);
+        hashMap.put(hashKey, value);
+        return data.put(this.prefixKey + key, hashMap);
     }
 
     @Override
     public Map<String, Object> hgetall(String key) {
-        return (Map)data.get(this.prefixKey + key);
+        return (Map) data.get(this.prefixKey + key);
     }
 }
