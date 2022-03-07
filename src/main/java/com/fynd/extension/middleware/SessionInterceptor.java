@@ -35,7 +35,6 @@ public class SessionInterceptor implements HandlerInterceptor {
         Session fdkSession = null;
         String companyId = !StringUtils.isEmpty(request.getHeader(X_COMPANY_ID)) ? request.getHeader(
                 X_COMPANY_ID) : request.getParameter(COMPANY_ID);
-        log.info("Company ID : " + companyId);
         if (!StringUtils.isEmpty(companyId)) {
             String compCookieName = FdkConstants.SESSION_COOKIE_NAME + "_" + companyId;
             Optional<Cookie> sessionCookie = Arrays.stream(request.getCookies())
