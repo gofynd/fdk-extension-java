@@ -118,11 +118,11 @@ public class ExtensionController {
                                                .getAuthorizationURL(session.getScope(), authCallback,
                                                                     session.getState(), ext.isOnlineAccessMode());
             sessionStorage.saveSession(session);
-            return ResponseEntity.status(HttpStatus.PERMANENT_REDIRECT)
+            return ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT)
                                  .header(Fields.X_COMPANY_ID, companyId)
                                  .header(HttpHeaders.LOCATION, redirectUrl)
                                  .header(HttpHeaders.SET_COOKIE, resCookie.toString())
-                                 .cacheControl(CacheControl.noCache())
+//                                 .cacheControl(CacheControl.noCache())
                                  .build();
         } catch (Exception error) {
             log.error("Exception in install call ", error);
@@ -203,11 +203,11 @@ public class ExtensionController {
                                     .getAuth()
                                     .apply(ExtensionContext.get());
 
-            return ResponseEntity.status(HttpStatus.PERMANENT_REDIRECT)
+            return ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT)
                                  .header(Fields.X_COMPANY_ID, fdkSession.getCompany_id())
                                  .header(HttpHeaders.LOCATION, redirectUrl)
                                  .header(HttpHeaders.SET_COOKIE, resCookie.toString())
-                                 .cacheControl(CacheControl.noCache())
+//                                 .cacheControl(CacheControl.noCache())
                                  .build();
         } catch (Exception error) {
             log.error("Exception in auth call ", error);
