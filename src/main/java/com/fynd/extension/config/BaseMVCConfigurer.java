@@ -13,20 +13,25 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class BaseMVCConfigurer implements WebMvcConfigurer {
 
     @Autowired
-    private SessionInterceptor sessionInterceptor;
+    SessionInterceptor sessionInterceptor;
 
     @Autowired
-    private PlatformInterceptor platformInterceptor;
+    PlatformInterceptor platformInterceptor;
 
     @Autowired
-    private ApplicationInterceptor applicationInterceptor;
+    ApplicationInterceptor applicationInterceptor;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
 
-        registry.addInterceptor(sessionInterceptor).addPathPatterns("/fp/auth","/platform/**").order(Ordered.HIGHEST_PRECEDENCE);
-        registry.addInterceptor(platformInterceptor).addPathPatterns("/platform/**").order(Ordered.LOWEST_PRECEDENCE);
-        registry.addInterceptor(applicationInterceptor).addPathPatterns("/application/**");
+        registry.addInterceptor(sessionInterceptor)
+                .addPathPatterns("/fp/auth", "/platform/**")
+                .order(Ordered.HIGHEST_PRECEDENCE);
+        registry.addInterceptor(platformInterceptor)
+                .addPathPatterns("/platform/**")
+                .order(Ordered.LOWEST_PRECEDENCE);
+        registry.addInterceptor(applicationInterceptor)
+                .addPathPatterns("/application/**");
     }
 }
 

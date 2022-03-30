@@ -16,10 +16,7 @@ import com.sdk.platform.PlatformClient;
 import com.sdk.platform.PlatformConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -49,8 +46,7 @@ public class ExtensionController {
     @GetMapping(path = "/install")
     public ResponseEntity<?> install(@RequestParam(value = "company_id") String companyId,
                                      @RequestParam(value = "application_id", required = false) String applicationId,
-                                     HttpServletResponse response,
-                                     HttpServletRequest request) {
+                                     HttpServletResponse response, HttpServletRequest request) {
 
         try {
             if (StringUtils.isEmpty(companyId)) {
@@ -64,15 +60,13 @@ public class ExtensionController {
             if (ext.isOnlineAccessMode()) {
                 session = new Session(Session.generateSessionId(true, null), true);
             } else {
-                sid = Session.generateSessionId(false, new Option(companyId,
-                                                                  ext.getExtensionProperties()
-                                                                     .getCluster()));
+                sid = Session.generateSessionId(false, new Option(companyId, ext.getExtensionProperties()
+                                                                                .getCluster()));
                 session = sessionStorage.getSession(sid);
                 if (ObjectUtils.isEmpty(session)) {
                     session = new Session(sid, true);
-                } else if (!Objects.equals(session.getExtension_id(),
-                                           ext.getExtensionProperties()
-                                              .getApi_key())) {
+                } else if (!Objects.equals(session.getExtension_id(), ext.getExtensionProperties()
+                                                                         .getApi_key())) {
                     session = new Session(sid, true);
                 }
             }
@@ -122,13 +116,13 @@ public class ExtensionController {
             // start authorization flow
             String redirectUrl = platformConfig.getPlatformOauthClient()
                                                .getAuthorizationURL(session.getScope(), authCallback,
-                                                                    session.getState(),
-                                                                    ext.isOnlineAccessMode());
+                                                                    session.getState(), ext.isOnlineAccessMode());
             sessionStorage.saveSession(session);
-            return ResponseEntity.status(HttpStatus.PERMANENT_REDIRECT)
+            return ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT)
                                  .header(Fields.X_COMPANY_ID, companyId)
                                  .header(HttpHeaders.LOCATION, redirectUrl)
                                  .header(HttpHeaders.SET_COOKIE, resCookie.toString())
+//                                 .cacheControl(CacheControl.noCache())
                                  .build();
         } catch (Exception error) {
             log.error("Exception in install call ", error);
@@ -143,13 +137,11 @@ public class ExtensionController {
                                        @RequestParam(value = "code", required = false) String code,
                                        @RequestParam(value = "state") String state,
                                        @RequestParam(value = "application_id", required = false) String applicationId,
-                                       HttpServletRequest request,
-                                       HttpServletResponse response) {
+                                       HttpServletRequest request, HttpServletResponse response) {
 
         try {
             if (!ExtensionContext.isPresent(FDK_SESSION)) {
-                throw new FdkSessionNotFound(
-                        "Can not complete oauth process as session not found");
+                throw new FdkSessionNotFound("Can not complete oauth process as session not found");
             }
             Session fdkSession = ExtensionContext.get(FDK_SESSION, Session.class);
             if (!fdkSession.getState()
@@ -181,8 +173,7 @@ public class ExtensionController {
             sessionStorage.saveSession(fdkSession);
 
             String compCookieName = FdkConstants.SESSION_COOKIE_NAME + "_" + fdkSession.getCompany_id();
-            ResponseCookie resCookie = ResponseCookie.from(compCookieName,
-                                                           fdkSession.getId())
+            ResponseCookie resCookie = ResponseCookie.from(compCookieName, fdkSession.getId())
                                                      .httpOnly(true)
                                                      .sameSite("None")
                                                      .secure(true)
@@ -195,16 +186,14 @@ public class ExtensionController {
             ExtensionContext.set(EXTENSION, ext);
             ExtensionContext.set(COMPANY_ID, companyId);
             ExtensionContext.set(APPLICATION_ID, applicationId);
-            if (Objects.nonNull(ext.getWebhookService()) &&
-                    Objects.nonNull(ext.getExtensionProperties()
-                                       .getWebhook()) &&
-                    Objects.nonNull(ext.getExtensionProperties()
-                                       .getWebhook()
-                                       .getSubscribe_on_install()) &&
+            if (Objects.nonNull(ext.getWebhookService()) && Objects.nonNull(ext.getExtensionProperties()
+                                                                               .getWebhook()) && Objects.nonNull(
                     ext.getExtensionProperties()
                        .getWebhook()
-                       .getSubscribe_on_install()
-                       .equals(Boolean.TRUE)) {
+                       .getSubscribe_on_install()) && ext.getExtensionProperties()
+                                                         .getWebhook()
+                                                         .getSubscribe_on_install()
+                                                         .equals(Boolean.TRUE)) {
                 PlatformClient platformClient = ext.getPlatformClient(companyId, token);
                 ext.getWebhookService()
                    .syncEvents(platformClient, null);
@@ -214,10 +203,11 @@ public class ExtensionController {
                                     .getAuth()
                                     .apply(ExtensionContext.get());
 
-            return ResponseEntity.status(HttpStatus.PERMANENT_REDIRECT)
+            return ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT)
                                  .header(Fields.X_COMPANY_ID, fdkSession.getCompany_id())
                                  .header(HttpHeaders.LOCATION, redirectUrl)
                                  .header(HttpHeaders.SET_COOKIE, resCookie.toString())
+//                                 .cacheControl(CacheControl.noCache())
                                  .build();
         } catch (Exception error) {
             log.error("Exception in auth call ", error);
@@ -228,15 +218,13 @@ public class ExtensionController {
     }
 
     @PostMapping(path = "/uninstall")
-    public ResponseEntity<?> uninstall(@RequestBody Client client,
-                                       HttpServletRequest request,
-                                       HttpServletResponse response
-    ) {
+    public ResponseEntity<?> uninstall(@RequestBody Client client, HttpServletRequest request,
+                                       HttpServletResponse response) {
         try {
             if (!ext.isOnlineAccessMode()) {
-                String sid = Session.generateSessionId(false,
-                                                       new Option(client.getCompany_id(), ext.getExtensionProperties()
-                                                                                             .getCluster()));
+                String sid = Session.generateSessionId(false, new Option(client.getCompany_id(),
+                                                                         ext.getExtensionProperties()
+                                                                            .getCluster()));
                 Session fdkSession = sessionStorage.getSession(sid);
                 AccessToken rawToken = new AccessToken();
                 rawToken.setExpiresIn(fdkSession.getExpires_in());

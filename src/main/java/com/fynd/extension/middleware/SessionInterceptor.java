@@ -4,6 +4,7 @@ import com.fynd.extension.constant.FdkConstants;
 import com.fynd.extension.session.Session;
 import com.fynd.extension.session.SessionStorage;
 import com.fynd.extension.utils.ExtensionContext;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -23,6 +24,7 @@ import static com.fynd.extension.utils.ExtensionContext.Keys.COMPANY_ID;
 import static com.fynd.extension.utils.ExtensionContext.Keys.FDK_SESSION;
 
 @Component
+@Slf4j
 public class SessionInterceptor implements HandlerInterceptor {
 
     @Autowired
