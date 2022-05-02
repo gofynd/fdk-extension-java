@@ -136,10 +136,10 @@ public class WebhookService {
                                                 .forEach(eventConfig -> {
                                                     String eventName = eventConfig.getEventName() + "/" + eventConfig.getEventType();
                                                     if (eventName.equals(eventMap.getName())) {
-                                                        if (StringUtils.isEmpty(eventMap.getCategory())) {
+                                                        if (StringUtils.isEmpty(eventMap.getCategory()) && StringUtils.isEmpty(eventMap.getVersion())) {
                                                             eventIds.add(eventConfig.getId());
-                                                        } else if (eventConfig.getEventCategory()
-                                                                              .equals(eventMap.getCategory())) {
+                                                        } else if (eventConfig.getEventCategory().equals(eventMap.getCategory())
+                                                            && eventConfig.getVersion().equals(eventMap.getVersion())) {
                                                             eventIds.add(eventConfig.getId());
                                                         }
                                                     }
@@ -323,16 +323,15 @@ public class WebhookService {
             verifySignature(signature, responseBody);
             String eventName = event.getString(Fields.EVENT_NAME) + "/" + event.getString(Fields.EVENT_TYPE);
             String eventCategory = event.getString(Fields.EVENT_CATEGORY);
+            String eventVersion = event.getString(Fields.EVENT_VERSION);
             String instanceName = StringUtils.EMPTY;
             for (EventMapProperties eventMap : this.extensionProperties.getWebhook()
                                                                        .getEvent_map()) {
-                if (eventMap.getName()
-                            .equals(eventName) && StringUtils.isNotEmpty(
-                        eventMap.getCategory()) && eventMap.getCategory()
-                                                           .equals(eventCategory)) {
+                if (eventMap.getName().equals(eventName) && StringUtils.isNotEmpty(eventMap.getCategory()) && eventMap.getCategory().equals(eventCategory)
+                        && StringUtils.isNotEmpty(eventMap.getVersion()) && eventMap.getVersion().equals(eventVersion)) {
                     instanceName = eventMap.getHandler();
                 } else if (eventMap.getName()
-                                   .equals(eventName) && StringUtils.isEmpty(eventMap.getCategory())) {
+                        .equals(eventName) && StringUtils.isEmpty(eventMap.getCategory()) && StringUtils.isEmpty(eventMap.getVersion())) {
                     instanceName = eventMap.getHandler();
                 }
             }
@@ -381,5 +380,6 @@ public class WebhookService {
         String COMPANY_ID = "company_id";
         String APPLICATION_ID = "application_id";
         String HMAC_SHA = "HmacSHA256";
+        String EVENT_VERSION = "version";
     }
 }
