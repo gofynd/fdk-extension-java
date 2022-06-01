@@ -113,6 +113,9 @@ public class ExtensionController {
             if (!StringUtils.isEmpty(applicationId)) {
                 authCallback += "?application_id=" + applicationId;
             }
+            ext.getCallbacks()
+               .getInstall()
+               .apply(ExtensionContext.get());
             // start authorization flow
             String redirectUrl = platformConfig.getPlatformOauthClient()
                                                .getAuthorizationURL(session.getScope(), authCallback,
