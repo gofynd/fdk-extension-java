@@ -17,9 +17,7 @@
 		<json.version>20211205</json.version>
 		<jedis.version>2.8.1</jedis.version>
 		<commons.version>1.5.0</commons.version>
-		<fdk-client.version>v0.0.4</fdk-client.version>
-		<logging.version>3.9.0</logging.version>
-		<okhttp.version>3.0.0-RC1</okhttp.version>
+		<fdk-client.version>v0.0.34-SNAPSHOT</fdk-client.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -66,18 +64,6 @@
 			<groupId>com.github.gofynd</groupId>
 			<artifactId>fdk-client-java</artifactId>
 			<version>${fdk-client.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>com.squareup.okhttp3</groupId>
-			<artifactId>logging-interceptor</artifactId>
-			<version>${logging.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>com.squareup.okhttp3</groupId>
-			<artifactId>okhttp-urlconnection</artifactId>
-			<version>${okhttp.version}</version>
 		</dependency>
 
 
