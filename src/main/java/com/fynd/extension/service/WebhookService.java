@@ -43,7 +43,7 @@ public class WebhookService {
     @Autowired
     ExtensionProperties extensionProperties;
 
-    public void syncEvents(PlatformClient platformClient, ExtensionProperties extensionProperties) {
+    public void syncEvents(PlatformClient platformClient, ExtensionProperties extensionProperties, Boolean enableWebhooks) {
         log.info("Sync events started");
         if (Objects.nonNull(extensionProperties)) {
             initialize(extensionProperties);
@@ -78,9 +78,10 @@ public class WebhookService {
                         subscriberConfigList));
                 subscriberConfig = setSubscriberConfig(subscriberConfigList);
                 subscriberConfig.setEventId(List.copyOf(getEventIds(this.webhookProperties, eventConfigList)));
-                if (isConfigurationUpdated(subscriberConfig, this.webhookProperties) || isEventDiff(
+                if (isConfigurationUpdated(subscriberConfig, this.webhookProperties, enableWebhooks) || isEventDiff(
                         subscriberConfigList.getItems()
                                             .get(0), subscriberConfig)) {
+                    subscriberConfig.setStatus(PlatformModels.SubscriberStatus.active);
                     platformClient.webhook.updateSubscriberConfig(subscriberConfig);
                     log.info("Webhook Config Details updated");
                 }
@@ -182,7 +183,7 @@ public class WebhookService {
     }
 
     private boolean isConfigurationUpdated(PlatformModels.SubscriberConfig subscriberConfig,
-                                           WebhookProperties webhookProperties) {
+                                           WebhookProperties webhookProperties, Boolean enableWebhooks) {
         boolean updated = false;
         this.associationCriteria = getCriteria(webhookProperties, subscriberConfig.getAssociation()
                                                                                   .getApplicationId());
@@ -213,7 +214,9 @@ public class WebhookService {
             subscriberConfig.setWebhookUrl(this.webhookUrl);
             updated = true;
         }
-
+        if (enableWebhooks) {
+            updated = true;
+        }
         return updated;
     }
 

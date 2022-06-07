@@ -199,7 +199,7 @@ public class ExtensionController {
                                                          .equals(Boolean.TRUE)) {
                 PlatformClient platformClient = ext.getPlatformClient(companyId, token);
                 ext.getWebhookService()
-                   .syncEvents(platformClient, null);
+                   .syncEvents(platformClient, null, true);
             }
 
             String redirectUrl = ext.getCallbacks()
