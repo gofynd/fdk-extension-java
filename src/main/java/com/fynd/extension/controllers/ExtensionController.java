@@ -113,14 +113,14 @@ public class ExtensionController {
             if (!StringUtils.isEmpty(applicationId)) {
                 authCallback += "?application_id=" + applicationId;
             }
-            ext.getCallbacks()
-               .getInstall()
-               .apply(ExtensionContext.get());
             // start authorization flow
             String redirectUrl = platformConfig.getPlatformOauthClient()
                                                .getAuthorizationURL(session.getScope(), authCallback,
                                                                     session.getState(), ext.isOnlineAccessMode());
             sessionStorage.saveSession(session);
+            ext.getCallbacks()
+               .getInstall()
+               .apply(ExtensionContext.get());
             return ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT)
                                  .header(Fields.X_COMPANY_ID, companyId)
                                  .header(HttpHeaders.LOCATION, redirectUrl)
