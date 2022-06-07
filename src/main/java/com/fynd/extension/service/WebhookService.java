@@ -214,7 +214,7 @@ public class WebhookService {
             subscriberConfig.setWebhookUrl(this.webhookUrl);
             updated = true;
         }
-        if (enableWebhooks) {
+        if (Objects.nonNull(enableWebhooks) && enableWebhooks) {
             updated = true;
         }
         return updated;
