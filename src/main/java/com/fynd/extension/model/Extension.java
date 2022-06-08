@@ -99,7 +99,13 @@ public class Extension {
     }
 
     public PlatformClient getPlatformClient(String companyId, AccessToken session) {
+        log.info("companyId: "+companyId);
         PlatformConfig platformConfig = this.getPlatformConfig(companyId);
+        log.info("platformConfig: "+platformConfig);
+        log.info("platformConfig.getApiKey: "+platformConfig.getApiKey());
+        log.info("platformConfig.getCompanyId: "+platformConfig.getCompanyId());
+        log.info("platformConfig.getApiSecret: "+platformConfig.getApiSecret());
+
         platformConfig.getPlatformOauthClient()
                       .setToken(session);
         if(session.getExpiresIn()!=0) {
