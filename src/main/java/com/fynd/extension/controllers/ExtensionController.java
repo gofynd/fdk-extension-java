@@ -118,9 +118,9 @@ public class ExtensionController {
                                                .getAuthorizationURL(session.getScope(), authCallback,
                                                                     session.getState(), ext.isOnlineAccessMode());
             sessionStorage.saveSession(session);
-            ext.getCallbacks()
+/*            ext.getCallbacks()
                .getInstall()
-               .apply(ExtensionContext.get());
+               .apply(ExtensionContext.get());*/
             return ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT)
                                  .header(Fields.X_COMPANY_ID, companyId)
                                  .header(HttpHeaders.LOCATION, redirectUrl)
