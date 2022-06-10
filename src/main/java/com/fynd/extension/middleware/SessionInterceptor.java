@@ -3,7 +3,6 @@ package com.fynd.extension.middleware;
 import com.fynd.extension.constant.FdkConstants;
 import com.fynd.extension.session.Session;
 import com.fynd.extension.session.SessionStorage;
-import com.fynd.extension.utils.ExtensionContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -19,9 +18,8 @@ import javax.servlet.http.HttpServletResponse;
 import java.util.Arrays;
 import java.util.Optional;
 
+import static com.fynd.extension.controllers.ExtensionController.Fields.COMPANY_ID;
 import static com.fynd.extension.controllers.ExtensionController.Fields.X_COMPANY_ID;
-import static com.fynd.extension.utils.ExtensionContext.Keys.COMPANY_ID;
-import static com.fynd.extension.utils.ExtensionContext.Keys.FDK_SESSION;
 
 @Component
 @Slf4j
@@ -49,7 +47,6 @@ public class SessionInterceptor implements HandlerInterceptor {
         }
 
         if (!ObjectUtils.isEmpty(fdkSession)) {
-            ExtensionContext.set(FDK_SESSION, fdkSession);
             return true;
         } else {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "unauthorized");

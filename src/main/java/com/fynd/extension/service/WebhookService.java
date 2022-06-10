@@ -137,10 +137,14 @@ public class WebhookService {
                                                 .forEach(eventConfig -> {
                                                     String eventName = eventConfig.getEventName() + "/" + eventConfig.getEventType();
                                                     if (eventName.equals(eventMap.getName())) {
-                                                        if (StringUtils.isEmpty(eventMap.getCategory()) && StringUtils.isEmpty(eventMap.getVersion())) {
+                                                        if (StringUtils.isEmpty(
+                                                                eventMap.getCategory()) || StringUtils.isEmpty(
+                                                                eventMap.getVersion())) {
                                                             eventIds.add(eventConfig.getId());
-                                                        } else if (eventConfig.getEventCategory().equals(eventMap.getCategory())
-                                                            && eventConfig.getVersion().equals(eventMap.getVersion())) {
+                                                        } else if (eventConfig.getEventCategory()
+                                                                              .equals(eventMap.getCategory())
+                                                                && eventConfig.getVersion()
+                                                                              .equals(eventMap.getVersion())) {
                                                             eventIds.add(eventConfig.getId());
                                                         }
                                                     }
@@ -325,16 +329,29 @@ public class WebhookService {
             }
             verifySignature(signature, responseBody);
             String eventName = event.getString(Fields.EVENT_NAME) + "/" + event.getString(Fields.EVENT_TYPE);
-            String eventCategory = event.getString(Fields.EVENT_CATEGORY);
-            String eventVersion = event.getString(Fields.EVENT_VERSION);
+            String eventCategory = event.has(Fields.EVENT_CATEGORY) ? event.getString(Fields.EVENT_CATEGORY)
+                    : StringUtils.EMPTY;
+            String eventVersion = event.has(Fields.EVENT_VERSION) ? event.getString(Fields.EVENT_VERSION)
+                    : StringUtils.EMPTY;
             String instanceName = StringUtils.EMPTY;
             for (EventMapProperties eventMap : this.extensionProperties.getWebhook()
                                                                        .getEvent_map()) {
-                if (eventMap.getName().equals(eventName) && StringUtils.isNotEmpty(eventMap.getCategory()) && eventMap.getCategory().equals(eventCategory)
-                        && StringUtils.isNotEmpty(eventMap.getVersion()) && eventMap.getVersion().equals(eventVersion)) {
+                if (eventMap.getName()
+                            .equals(eventName) && StringUtils.isNotEmpty(
+                        eventMap.getCategory()) && eventMap.getCategory()
+                                                           .equals(eventCategory)
+                        && StringUtils.isNotEmpty(eventMap.getVersion()) && eventMap.getVersion()
+                                                                                    .equals(eventVersion)) {
                     instanceName = eventMap.getHandler();
-                } else if (eventMap.getName()
-                        .equals(eventName) && StringUtils.isEmpty(eventMap.getCategory()) && StringUtils.isEmpty(eventMap.getVersion())) {
+                } else if ((eventMap.getName()
+                                    .equals(eventName) && StringUtils.isEmpty(eventMap.getCategory()))
+                        || (eventMap.getName()
+                                    .equals(eventName) && StringUtils.isEmpty(eventMap.getVersion()))) {
+                    instanceName = eventMap.getHandler();
+                } else if ((eventMap.getName()
+                                    .equals(eventName) && StringUtils.isEmpty(eventCategory))
+                        || (eventMap.getName()
+                                    .equals(eventName) && StringUtils.isEmpty(eventVersion))) {
                     instanceName = eventMap.getHandler();
                 }
             }

@@ -10,13 +10,15 @@ import com.fynd.extension.model.Option;
 import com.fynd.extension.model.Response;
 import com.fynd.extension.session.Session;
 import com.fynd.extension.session.SessionStorage;
-import com.fynd.extension.utils.ExtensionContext;
 import com.sdk.common.AccessToken;
 import com.sdk.platform.PlatformClient;
 import com.sdk.platform.PlatformConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.*;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -29,8 +31,6 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Objects;
 import java.util.UUID;
-
-import static com.fynd.extension.utils.ExtensionContext.Keys.*;
 
 @RestController
 @RequestMapping("/fp")
@@ -91,9 +91,6 @@ public class ExtensionController {
                     session.setExpires_in(sessionExpires.getTime());
                 }
             }
-
-            ExtensionContext.set(FDK_SESSION, session);
-            ExtensionContext.set(EXTENSION, ext);
             String compCookieName = FdkConstants.SESSION_COOKIE_NAME + "_" + companyId;
             ResponseCookie resCookie = ResponseCookie.from(compCookieName, session.getId())
                                                      .httpOnly(true)
@@ -118,9 +115,6 @@ public class ExtensionController {
                                                .getAuthorizationURL(session.getScope(), authCallback,
                                                                     session.getState(), ext.isOnlineAccessMode());
             sessionStorage.saveSession(session);
-/*            ext.getCallbacks()
-               .getInstall()
-               .apply(ExtensionContext.get());*/
             return ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT)
                                  .header(Fields.X_COMPANY_ID, companyId)
                                  .header(HttpHeaders.LOCATION, redirectUrl)
@@ -143,15 +137,19 @@ public class ExtensionController {
                                        HttpServletRequest request, HttpServletResponse response) {
 
         try {
-            if (!ExtensionContext.isPresent(FDK_SESSION)) {
+            Session fdkSession = sessionStorage.getSessionFromCompany(companyId);
+            if (Objects.isNull(fdkSession)) {
                 throw new FdkSessionNotFound("Can not complete oauth process as session not found");
             }
-            Session fdkSession = ExtensionContext.get(FDK_SESSION, Session.class);
             if (!fdkSession.getState()
                            .equalsIgnoreCase(state)) {
                 throw new FdkInvalidOAuth("Invalid oauth call");
             }
 
+            log.info("FDK session retreived, company : {}", fdkSession.getCompany_id());
+            log.info("FDK session retreived, refresh : {}", fdkSession.getRefresh_token());
+            log.info("FDK session retreived, access : {}", fdkSession.getAccess_token());
+            log.info("FDK session retreived, expires : {}", fdkSession.getExpires_in());
             PlatformConfig platformConfig = ext.getPlatformConfig(fdkSession.getCompany_id());
             platformConfig.getPlatformOauthClient()
                           .verifyCallback(code);
@@ -159,6 +157,8 @@ public class ExtensionController {
             AccessToken token = platformConfig.getPlatformOauthClient()
                                               .getRawToken();
 
+            log.info("After verify callback token : {}", token.getToken());
+            log.info("After verify callback refres : {}", token.getRefreshToken());
             Date sessionExpires = Date.from(Instant.now()
                                                    .plusMillis(token.getExpiresIn() * 1000));
 
@@ -184,11 +184,10 @@ public class ExtensionController {
                                                      .maxAge(Duration.between(Instant.now(), Instant.ofEpochMilli(
                                                              fdkSession.getExpires_in())))
                                                      .build();
-
-            ExtensionContext.set(FDK_SESSION, fdkSession);
-            ExtensionContext.set(EXTENSION, ext);
-            ExtensionContext.set(COMPANY_ID, companyId);
-            ExtensionContext.set(APPLICATION_ID, applicationId);
+            log.info("Redis session {}", ext.getStorage()
+                                            .get(fdkSession.getId()));
+            log.info("FDK session token {}", fdkSession.getAccess_token());
+            log.info("FDK session refresh {}", fdkSession.getRefresh_token());
             if (Objects.nonNull(ext.getWebhookService()) && Objects.nonNull(ext.getExtensionProperties()
                                                                                .getWebhook()) && Objects.nonNull(
                     ext.getExtensionProperties()
@@ -201,11 +200,15 @@ public class ExtensionController {
                 ext.getWebhookService()
                    .syncEvents(platformClient, null, true);
             }
+            log.info("After FDK session token {}", fdkSession.getAccess_token());
+            log.info("After FDK session refresh {}", fdkSession.getRefresh_token());
 
+            log.info("Redis session {}", ext.getStorage()
+                                            .get(fdkSession.getId()));
             String redirectUrl = ext.getCallbacks()
                                     .getAuth()
-                                    .apply(ExtensionContext.get());
-
+                                    .apply(fdkSession);
+            log.info("After callback");
             return ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT)
                                  .header(Fields.X_COMPANY_ID, fdkSession.getCompany_id())
                                  .header(HttpHeaders.LOCATION, redirectUrl)
@@ -233,14 +236,12 @@ public class ExtensionController {
                 rawToken.setExpiresIn(fdkSession.getExpires_in());
                 rawToken.setToken(fdkSession.getAccess_token());
                 rawToken.setRefreshToken(fdkSession.getRefresh_token());
-                PlatformClient platformClient = ext.getPlatformClient(client.getCompany_id(), rawToken);
-                ExtensionContext.set(PLATFORM_CLIENT, platformClient);
                 sessionStorage.deleteSession(sid);
+                ext.getCallbacks()
+                   .getUninstall()
+                   .apply(fdkSession);
             }
-            ExtensionContext.set(EXTENSION, ext);
-            ext.getCallbacks()
-               .getUninstall()
-               .apply(ExtensionContext.get());
+
             return ResponseEntity.status(HttpStatus.OK)
                                  .body(new Response(true));
         } catch (Exception error) {
@@ -253,5 +254,6 @@ public class ExtensionController {
     public interface Fields {
         int MINUTES_LIMIT = 900000;
         String X_COMPANY_ID = "x-company-id";
+                String COMPANY_ID = "company_id";
     }
 }

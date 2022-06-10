@@ -3,6 +3,7 @@ package com.fynd.extension.session;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fynd.extension.constant.FdkConstants;
 import com.fynd.extension.model.Extension;
+import com.fynd.extension.model.Option;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -32,6 +33,17 @@ public class SessionStorage {
         } else {
             extension.getStorage()
                      .set(session.getId(), objectMapper.writeValueAsString(session));
+        }
+    }
+
+    public Session getSessionFromCompany(String companyId) {
+        try {
+            String sid = Session.generateSessionId(false, new Option(companyId, extension.getExtensionProperties()
+                                                                            .getCluster()));
+            return getSession(sid);
+        } catch (Exception e) {
+            log.error("Exception in getting session for company ID : {}", companyId, e);
+            return null;
         }
     }
 
