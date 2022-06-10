@@ -4,8 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fynd.extension.model.Application;
 import com.fynd.extension.model.Response;
 import com.fynd.extension.model.User;
-import com.fynd.extension.utils.ExtensionContext;
-import com.sdk.application.ApplicationClient;
 import com.sdk.application.ApplicationConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -16,8 +14,6 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import static com.fynd.extension.utils.ExtensionContext.Keys.*;
 
 @Component
 public class ApplicationInterceptor implements HandlerInterceptor {
@@ -31,17 +27,17 @@ public class ApplicationInterceptor implements HandlerInterceptor {
         try {
             if (!StringUtils.isEmpty(request.getHeader(Fields.X_USER_DATA))) {
                 User user = objectMapper.readValue(request.getHeader(Fields.X_USER_DATA), User.class);
-                ExtensionContext.set(Fields.X_USER_DATA, user);
+//                ExtensionContext.set(Fields.X_USER_DATA, user);
 //                    req.user.user_id = req.user._id;
             }
             if (!StringUtils.isEmpty(request.getHeader(Fields.X_APPLICATION_DATA))) {
                 Application application = objectMapper.readValue(request.getHeader(Fields.X_APPLICATION_DATA),
                                                                  Application.class);
-                ExtensionContext.set(APPLICATION, application);
+//                ExtensionContext.set(APPLICATION, application);
                 ApplicationConfig applicationConfig = new ApplicationConfig(application.getID(),
                                                                             application.getToken());
-                ExtensionContext.set(APPLICATION_CONFIG, applicationConfig);
-                ExtensionContext.set(APPLICATION_CLIENT, new ApplicationClient(applicationConfig));
+//                ExtensionContext.set(APPLICATION_CONFIG, applicationConfig);
+//                ExtensionContext.set(APPLICATION_CLIENT, new ApplicationClient(applicationConfig));
             }
             return true;
         } catch (Exception error) {
