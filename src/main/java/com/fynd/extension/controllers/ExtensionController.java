@@ -236,10 +236,10 @@ public class ExtensionController {
                 rawToken.setExpiresIn(fdkSession.getExpires_in());
                 rawToken.setToken(fdkSession.getAccess_token());
                 rawToken.setRefreshToken(fdkSession.getRefresh_token());
-                sessionStorage.deleteSession(sid);
                 ext.getCallbacks()
                    .getUninstall()
                    .apply(fdkSession);
+                sessionStorage.deleteSession(sid);
             }
 
             return ResponseEntity.status(HttpStatus.OK)
