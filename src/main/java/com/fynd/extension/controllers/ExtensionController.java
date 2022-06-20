@@ -118,6 +118,9 @@ public class ExtensionController {
                                                .getAuthorizationURL(session.getScope(), authCallback,
                                                                     session.getState(), ext.isOnlineAccessMode());
             sessionStorage.saveSession(session);
+            ext.getCallbacks()
+               .getInstall()
+               .apply(ExtensionContext.get());
             return ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT)
                                  .header(Fields.X_COMPANY_ID, companyId)
                                  .header(HttpHeaders.LOCATION, redirectUrl)
@@ -196,7 +199,7 @@ public class ExtensionController {
                                                          .equals(Boolean.TRUE)) {
                 PlatformClient platformClient = ext.getPlatformClient(companyId, token);
                 ext.getWebhookService()
-                   .syncEvents(platformClient, null);
+                   .syncEvents(platformClient, null, true);
             }
 
             String redirectUrl = ext.getCallbacks()
