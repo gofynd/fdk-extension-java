@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -15,11 +16,13 @@ import java.util.function.Function;
 @AllArgsConstructor
 public class ExtensionCallback {
 
-    private Function<Session ,String> auth;
+    private Function<HttpServletRequest,String> auth;
 
-    private Function<Session,String> install;
+    private Function<HttpServletRequest,String> install;
 
-    private Function<Session,String> uninstall;
+    private Function<HttpServletRequest,String> uninstall;
+
+    private Function<HttpServletRequest,String> autoInstall;
 
 
 

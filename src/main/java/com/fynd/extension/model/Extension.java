@@ -1,12 +1,16 @@
 package com.fynd.extension.model;
 
 import com.fynd.extension.error.FdkInvalidExtensionConfig;
+import com.fynd.extension.middleware.AccessMode;
 import com.fynd.extension.middleware.ClientCall;
+import com.fynd.extension.middleware.ExtensionInterceptor;
 import com.fynd.extension.service.WebhookService;
+import com.fynd.extension.session.Session;
+import com.fynd.extension.session.SessionStorage;
 import com.fynd.extension.storage.BaseStorage;
-import com.sdk.common.AccessToken;
 import com.sdk.common.RequestSignerInterceptor;
 import com.sdk.common.RetrofitServiceFactory;
+import com.sdk.common.model.AccessTokenDto;
 import com.sdk.platform.PlatformClient;
 import com.sdk.platform.PlatformConfig;
 import lombok.Getter;
@@ -48,11 +52,11 @@ public class Extension {
         extension.setStorage(storage);
         extension.setExtensionProperties(extensionProperties);
 
-        if (StringUtils.isEmpty(extensionProperties.getApi_key())) {
+        if (StringUtils.isEmpty(extensionProperties.getApiKey())) {
             throw new FdkInvalidExtensionConfig("Invalid apiKey");
         }
 
-        if (StringUtils.isEmpty(extensionProperties.getApi_secret())) {
+        if (StringUtils.isEmpty(extensionProperties.getApiSecret())) {
             throw new FdkInvalidExtensionConfig("Invalid apiSecret");
         }
         if (ObjectUtils.isEmpty(callbacks) || (ObjectUtils.isEmpty(callbacks) &&
@@ -63,8 +67,8 @@ public class Extension {
                     "Missing some of callbacks. Please add all , auth, install and uninstall callbacks.");
         }
         extension.setCallbacks(callbacks);
-        extensionProperties.setAccess_mode(StringUtils.isEmpty(
-                extensionProperties.getAccess_mode()) ? "offline" : extensionProperties.getAccess_mode());
+        extensionProperties.setAccessMode(StringUtils.isEmpty(
+                extensionProperties.getAccessMode()) ? AccessMode.OFFLINE.getName() : extensionProperties.getAccessMode());
 
         if (StringUtils.isNotEmpty(extensionProperties.getCluster())) {
             if (!isValid(extensionProperties.getCluster())) {
@@ -80,11 +84,11 @@ public class Extension {
         } catch (Exception e) {
             log.error("Failed in getting Extension details", e);
         }
-        if (!isValid(extensionProperties.getBase_url())) {
+        if (!isValid(extensionProperties.getBaseUrl())) {
             throw new FdkInvalidExtensionConfig("Invalid baseUrl");
-        } else if (StringUtils.isNotEmpty(extensionProperties.getBase_url()) &&
+        } else if (StringUtils.isNotEmpty(extensionProperties.getBaseUrl()) &&
                 Objects.nonNull(extensionDetails)) {
-            extensionProperties.setBase_url(extensionDetails.getBaseUrl());
+            extensionProperties.setBaseUrl(extensionDetails.getBaseUrl());
         }
         if (StringUtils.isNotEmpty(extensionProperties.getScopes())) {
             verifyScopes(extensionProperties.getScopes(), extensionDetails);
@@ -117,7 +121,7 @@ public class Extension {
         interceptorList.add(new RequestSignerInterceptor());
         ClientCall clientCall = retrofitServiceFactory.createService(extensionProperties.getCluster(), ClientCall.class,
                                                                      interceptorList);
-        return clientCall.getExtensionDetails(extensionProperties.getApi_key())
+        return clientCall.getExtensionDetails(extensionProperties.getApiKey())
                          .execute();
     }
 
@@ -134,27 +138,36 @@ public class Extension {
     }
 
     public String getAuthCallback() {
-        return String.format("%s%s", this.extensionProperties.getBase_url(), "/fp/auth");
+        return String.format("%s%s", this.extensionProperties.getBaseUrl(), "/fp/auth");
     }
 
     public boolean isOnlineAccessMode() {
-        return Objects.equals(this.extensionProperties.getAccess_mode(), "online");
+        return Objects.equals(this.extensionProperties.getAccessMode(), AccessMode.ONLINE.getName());
     }
 
-    public PlatformClient getPlatformClient(String companyId, AccessToken session) {
-        if (!this.isInitialized){
+    public PlatformClient getPlatformClient(String companyId, Session session) {
+        if (!this.isInitialized) {
             throw new FdkInvalidExtensionConfig("Extension not initialized due to invalid data");
         }
         PlatformConfig platformConfig = this.getPlatformConfig(companyId);
+        AccessTokenDto accessTokenDto = buildAccessToken(session);
         platformConfig.getPlatformOauthClient()
-                      .setToken(session);
-        platformConfig.getPlatformOauthClient().getTokenExpiresIn()
-        if (session.getExpiresIn() != 0) {
-            if (((session.getExpiresIn() - new Date().getTime()) / 1000) <= Fields.MIN_TIME_MILLIS) {
+                      .setToken(accessTokenDto);
+        platformConfig.getPlatformOauthClient()
+                      .setTokenExpiresAt(session.getAccessTokenValidity());
+        if (Objects.nonNull(session.getAccessTokenValidity()) && Objects.nonNull(session.getRefreshToken())) {
+            boolean acNrExpired = ((session.getAccessTokenValidity() - new Date().getTime()) / 1000) <= 120;
+            if (acNrExpired) {
                 try {
-                    log.info("Renewing access token for company : " + companyId);
-                    platformConfig.getPlatformOauthClient()
-                                  .renewAccesstoken();
+                    log.debug("Renewing access token for company {} with platform config {}", companyId,
+                              platformConfig);
+                    AccessTokenDto renewTokenRes = platformConfig.getPlatformOauthClient()
+                                                                 .renewAccesstoken();
+                    renewTokenRes.setAccessTokenValidity(platformConfig.getPlatformOauthClient()
+                                                                       .getTokenExpiresAt());
+                    Session.updateToken(renewTokenRes, session);
+                    SessionStorage sessionStorage = new SessionStorage();
+                    sessionStorage.saveSession(session, this);
                     log.info("Access token renewed for company : " + companyId);
                 } catch (Exception e) {
                     log.error("Exception occurred in renewing access token ", e);
@@ -165,15 +178,24 @@ public class Extension {
     }
 
     public PlatformConfig getPlatformConfig(String companyId) {
-        if (!this.isInitialized){
+        if (!this.isInitialized) {
             throw new FdkInvalidExtensionConfig("Extension not initialized due to invalid data");
         }
-        return new PlatformConfig(companyId, this.extensionProperties.getApi_key(),
-                                  this.extensionProperties.getApi_secret(), this.extensionProperties.getCluster(), false);
+        return new PlatformConfig(companyId, this.extensionProperties.getApiKey(),
+                                  this.extensionProperties.getApiSecret(), this.extensionProperties.getCluster(),
+                                  false);
     }
 
-    interface Fields {
-        int MIN_TIME_MILLIS = 120;
+    private AccessTokenDto buildAccessToken(Session session) {
+        AccessTokenDto accessTokenDto = new AccessTokenDto();
+        accessTokenDto.setAccessTokenValidity(session.getAccessTokenValidity());
+        accessTokenDto.setRefreshToken(session.getRefreshToken());
+        accessTokenDto.setAccessMode(session.getAccessMode());
+        accessTokenDto.setAccessToken(session.getAccessToken());
+        accessTokenDto.setExpires(session.getExpires());
+        accessTokenDto.setExpiresIn(session.getExpiresIn());
+        accessTokenDto.setCurrentUser(session.getCurrentUser());
+        return accessTokenDto;
     }
 }
 
