@@ -97,6 +97,7 @@ public class ExtensionController {
                                                                     session.getState(),
                                                                     true); // Always generate online mode token for extension launch
             sessionStorage.saveSession(session);
+            request.setAttribute("session", session);
             return ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT)
                                  .header(Fields.X_COMPANY_ID, companyId)
                                  .header(HttpHeaders.LOCATION, redirectUrl)
@@ -140,6 +141,7 @@ public class ExtensionController {
             token.setAccessTokenValidity(sessionExpires.getTime());
             Session.updateToken(token, fdkSession);
             sessionStorage.saveSession(fdkSession);
+            request.setAttribute("session", fdkSession);
             // Generate separate access token for offline mode
             if (!ext.isOnlineAccessMode()) {
                 String sid = Session.generateSessionId(false, new Option(companyId, ext.getExtensionProperties()
