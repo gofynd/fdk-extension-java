@@ -1,0 +1,6 @@
+info:
+  build:
+    artifact: '@project.artifactId@'
+    description: '@project.description@'
+    name: '@project.name@'
+    version: '@project.version@'

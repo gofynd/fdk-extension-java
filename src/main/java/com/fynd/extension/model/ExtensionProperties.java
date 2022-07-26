@@ -11,17 +11,17 @@ import org.springframework.stereotype.Component;
 @Setter
 public class ExtensionProperties {
 
-    private String integration_id;
+    private String integrationId;
 
-    private String api_key;
+    private String apiKey;
 
-    private String api_secret;
+    private String apiSecret;
 
     private String scopes;
 
-    private String base_url;
+    private String baseUrl;
 
-    private String access_mode;
+    private String accessMode;
 
     private String cluster;
 

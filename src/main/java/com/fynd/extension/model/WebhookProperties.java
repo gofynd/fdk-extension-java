@@ -9,13 +9,13 @@ import java.util.List;
 @Setter
 public class WebhookProperties {
 
-    private String api_path;
+    private String apiPath;
 
-    private String notification_email;
+    private String notificationEmail;
 
-    private String subscribed_saleschannel;
+    private String subscribedSalesChannel;
 
-    private List<EventMapProperties> event_map;
+    private List<EventMapProperties> eventMap;
 
-    private Boolean subscribe_on_install;
+    private Boolean subscribeOnInstall;
 }

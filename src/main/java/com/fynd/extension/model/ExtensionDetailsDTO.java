@@ -5,14 +5,22 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class Meta {
+public class ExtensionDetailsDTO {
 
     @JsonProperty("name")
-    String Name;
+    String name;
 
-    @JsonProperty("value")
-    String Value;
+    @JsonProperty("extension_type")
+    String extensionType;
+
+    @JsonProperty("base_url")
+    String baseUrl;
+
+    @JsonProperty("scope")
+    List<String> scope;
 }

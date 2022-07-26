@@ -1,24 +1,33 @@
 package com.fynd.extension.session;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fynd.extension.middleware.AccessMode;
 import com.fynd.extension.model.Option;
+import com.sdk.common.model.AccessTokenDto;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.beans.BeanUtils;
 
 import java.security.MessageDigest;
-import java.util.Base64;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @NoArgsConstructor
 @Getter
 @Setter
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Session {
+
+    @JsonProperty("current_user")
+    Map<String, Object> currentUser;
 
     private String id;
 
-    private String company_id;
+    @JsonProperty("company_id")
+    private String companyId;
 
     private String state;
 
@@ -26,21 +35,25 @@ public class Session {
 
     private String expires;
 
-    private long expires_in;
+    @JsonProperty("expires_in")
+    private Long expiresIn;
 
-    private long access_token_validity;
+    @JsonProperty("access_token_validity")
+    private Long accessTokenValidity;
 
-    private String access_mode = "online";
+    @JsonProperty("access_mode")
+    private String accessMode = AccessMode.ONLINE.getName();
 
-    private String access_token;
+    @JsonProperty("access_token")
+    private String accessToken;
 
-    private String current_user;
-
-    private String refresh_token;
+    @JsonProperty("refresh_token")
+    private String refreshToken;
 
     private boolean isNew = true;
 
-    private String extension_id;
+    @JsonProperty("extension_id")
+    private String extensionId;
 
     public Session(String id, boolean isNew) {
         this.id = id;
@@ -63,5 +76,15 @@ public class Session {
                          .encodeToString(
                                  digest.digest((options.getCluster() + ":" + options.getCompany_id()).getBytes()));
         }
+    }
+
+    public static void updateToken(AccessTokenDto renewToken, Session session) {
+        session.setAccessMode(
+                Objects.nonNull(renewToken.getAccessMode()) ? renewToken.getAccessMode() : session.getAccessMode());
+        session.setAccessToken(renewToken.getAccessToken());
+        session.setCurrentUser(renewToken.getCurrentUser());
+        session.setRefreshToken(renewToken.getRefreshToken());
+        session.setExpiresIn(renewToken.getExpiresIn());
+        session.setAccessTokenValidity(renewToken.getAccessTokenValidity());
     }
 }
