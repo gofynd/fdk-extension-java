@@ -2,6 +2,7 @@ package com.fynd.extension.session;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fynd.extension.middleware.AccessMode;
 import com.fynd.extension.model.Option;
 import com.sdk.common.model.AccessTokenDto;
@@ -20,10 +21,12 @@ import java.util.*;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Session {
 
+    @JsonProperty("current_user")
     Map<String, Object> currentUser;
 
     private String id;
 
+    @JsonProperty("company_id")
     private String companyId;
 
     private String state;
@@ -32,18 +35,24 @@ public class Session {
 
     private String expires;
 
+    @JsonProperty("expires_in")
     private Long expiresIn;
 
+    @JsonProperty("access_token_validity")
     private Long accessTokenValidity;
 
+    @JsonProperty("access_mode")
     private String accessMode = AccessMode.ONLINE.getName();
 
+    @JsonProperty("access_token")
     private String accessToken;
 
+    @JsonProperty("refresh_token")
     private String refreshToken;
 
     private boolean isNew = true;
 
+    @JsonProperty("extension_id")
     private String extensionId;
 
     public Session(String id, boolean isNew) {

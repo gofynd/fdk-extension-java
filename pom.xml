@@ -60,18 +60,11 @@
 			<version>${commons.version}</version>
 		</dependency>
 
-<!--		<dependency>-->
-<!--			<groupId>com.github.gofynd</groupId>-->
-<!--			<artifactId>fdk-client-java</artifactId>-->
-<!--			<version>${fdk-client.version}</version>-->
-<!--		</dependency>-->
-
 		<dependency>
 			<groupId>com.github.gofynd</groupId>
-			<artifactId>fynd-client-java</artifactId>
-			<version>1.0-SNAPSHOT</version>
+			<artifactId>fdk-client-java</artifactId>
+			<version>${fdk-client.version}</version>
 		</dependency>
-
 
 	</dependencies>
 
