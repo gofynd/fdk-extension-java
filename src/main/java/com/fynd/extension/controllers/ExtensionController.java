@@ -265,6 +265,7 @@ public class ExtensionController {
                 ext.getWebhookService()
                    .syncEvents(platformClient, null, true);
             }
+            request.setAttribute("session", session);
             log.info("Extension installed for company: {} on company creation.`", companyId);
             ext.getCallbacks()
                .getAutoInstall()
@@ -286,6 +287,8 @@ public class ExtensionController {
                 String sid = Session.generateSessionId(false, new Option(client.getCompanyId(),
                                                                          ext.getExtensionProperties()
                                                                             .getCluster()));
+                Session session = sessionStorage.getSession(sid);
+                request.setAttribute("session", session);
                 ext.getCallbacks()
                    .getUninstall()
                    .apply(request);
