@@ -34,6 +34,8 @@ import java.util.stream.Collectors;
 @Slf4j
 public class WebhookService {
 
+    public boolean isInitialized;
+
     String webhookUrl;
 
     String associationCriteria;
@@ -48,8 +50,6 @@ public class WebhookService {
 
     @Autowired
     ObjectMapper objectMapper = new ObjectMapper();
-
-    public boolean isInitialized;
 
     public void syncEvents(PlatformClient platformClient, ExtensionProperties extensionProperties,
                            Boolean enableWebhooks) {
@@ -80,8 +80,8 @@ public class WebhookService {
                 subscriberConfig.setAssociation(association);
                 subscriberConfig.setAuthMeta(
                         new PlatformModels.AuthMeta(Fields.HMAC, this.extensionProperties.getApiSecret()));
-                if(enableWebhooks!=null) {
-                    if(enableWebhooks.equals(Boolean.TRUE)) {
+                if (enableWebhooks != null) {
+                    if (enableWebhooks.equals(Boolean.TRUE)) {
                         subscriberConfig.setStatus(PlatformModels.SubscriberStatus.active);
                     } else {
                         subscriberConfig.setStatus(PlatformModels.SubscriberStatus.inactive);
@@ -96,15 +96,16 @@ public class WebhookService {
                 subscriberConfig = setSubscriberConfig(subscriberResponse);
                 subscriberConfig.setEventId(List.copyOf(getEventIds(this.webhookProperties,
                                                                     eventConfigList)));
-                if(enableWebhooks!=null) {
-                    if(enableWebhooks.equals(Boolean.TRUE)) {
+                if (enableWebhooks != null) {
+                    if (enableWebhooks.equals(Boolean.TRUE)) {
                         subscriberConfig.setStatus(PlatformModels.SubscriberStatus.active);
                     } else {
                         subscriberConfig.setStatus(PlatformModels.SubscriberStatus.inactive);
                     }
                 }
-                if (isConfigurationUpdated(subscriberConfig, this.webhookProperties, enableWebhooks) || isEventDiff(
-                        subscriberResponse, subscriberConfig)) {
+                if (isConfigurationUpdated(subscriberConfig, this.webhookProperties) || isEventDiff(
+                        subscriberResponse, subscriberConfig) || subscriberResponse.getStatus()
+                                                                                   .equals(PlatformModels.SubscriberStatus.inactive)) {
                     platformClient.webhook.updateSubscriberConfig(subscriberConfig);
                     log.info("Webhook Config Details updated");
                 }
@@ -233,7 +234,7 @@ public class WebhookService {
     }
 
     private boolean isConfigurationUpdated(PlatformModels.SubscriberConfig subscriberConfig,
-                                           WebhookProperties webhookProperties, Boolean enableWebhooks) {
+                                           WebhookProperties webhookProperties) {
         boolean updated = false;
         this.associationCriteria = getCriteria(webhookProperties, subscriberConfig.getAssociation()
                                                                                   .getApplicationId());
@@ -274,7 +275,7 @@ public class WebhookService {
                                                       .map(PlatformModels.EventConfig::getId)
                                                       .collect(Collectors.toSet());
         List<Integer> uniques = new ArrayList<>(newEvents.getEventId());
-        if(existingEventIds.size() > uniques.size()) {
+        if (existingEventIds.size() > uniques.size()) {
             return true;
         }
         uniques.removeAll(existingEventIds);
