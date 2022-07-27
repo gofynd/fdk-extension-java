@@ -31,6 +31,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 
+import static com.fynd.extension.controllers.ExtensionController.Fields.DELIMITER;
+
 @RestController
 @RequestMapping("/fp")
 @Slf4j
@@ -76,7 +78,7 @@ public class ExtensionController {
                     session.setExpiresIn(sessionExpires.getTime());
                 }
             }
-            String compCookieName = FdkConstants.SESSION_COOKIE_NAME + "_" + companyId;
+            String compCookieName = FdkConstants.SESSION_COOKIE_NAME + DELIMITER + companyId;
             ResponseCookie resCookie = ResponseCookie.from(compCookieName, session.getId())
                                                      .httpOnly(true)
                                                      .sameSite("None")
@@ -172,7 +174,7 @@ public class ExtensionController {
                 } else {
                     fdkSession.setExpires(null);
                 }
-                String compCookieName = FdkConstants.SESSION_COOKIE_NAME + "_" + fdkSession.getCompanyId();
+                String compCookieName = FdkConstants.SESSION_COOKIE_NAME + DELIMITER + fdkSession.getCompanyId();
                 ResponseCookie resCookie = ResponseCookie.from(compCookieName, fdkSession.getId())
                                                          .httpOnly(true)
                                                          .sameSite("None")
@@ -210,10 +212,10 @@ public class ExtensionController {
                                        .filter(Objects::nonNull)
                                        .filter(cookie -> Objects.nonNull(cookie.getName()) && cookie.getName()
                                                                                                     .contains(
-                                                                                                            "_") && cookie.getName()
-                                                                                                                          .split("_").length == 3)
+                                                                                                            FdkConstants.SESSION_COOKIE_NAME) && cookie.getName()
+                                                                                                                                                       .split(DELIMITER).length == 3)
                                        .filter(cookie -> cookie.getName()
-                                                               .split("_")[2].equals(companyId))
+                                                               .split(DELIMITER)[2].equals(companyId))
 
                                        .findFirst()
                                        .orElseThrow(() -> new FdkSessionNotFound("Cookie not found"));
@@ -301,5 +303,6 @@ public class ExtensionController {
     public interface Fields {
         int MINUTES_LIMIT = 900000;
         String X_COMPANY_ID = "x-company-id";
+        String DELIMITER = "_";
     }
 }
