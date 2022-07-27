@@ -15,13 +15,13 @@ import com.sdk.common.model.AccessTokenDto;
 import com.sdk.platform.PlatformClient;
 import com.sdk.platform.PlatformConfig;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.ObjectUtils;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.Cookie;
@@ -65,7 +65,8 @@ public class ExtensionController {
                 session.setExpires(FdkConstants.DATE_FORMAT.get()
                                                            .format(sessionExpires));
                 session.setExpiresIn(sessionExpires.getTime());
-                session.setAccessMode(AccessMode.ONLINE.getName()); // Always generate online mode token for extension launch
+                session.setAccessMode(
+                        AccessMode.ONLINE.getName()); // Always generate online mode token for extension launch
                 session.setExtensionId(ext.getExtensionProperties()
                                           .getApiKey());
             } else {
@@ -120,93 +121,108 @@ public class ExtensionController {
 
         try {
             String sessionIdForCompany = getSessionIdFromCookie(request.getCookies(), companyId);
-            Session fdkSession = sessionStorage.getSession(sessionIdForCompany);
-            if (Objects.isNull(fdkSession)) {
-                throw new FdkSessionNotFound("Can not complete oauth process as session not found");
-            }
-            if (!fdkSession.getState()
-                           .equalsIgnoreCase(state)) {
-                throw new FdkInvalidOAuth("Invalid oauth call");
-            }
-            PlatformConfig platformConfig = ext.getPlatformConfig(fdkSession.getCompanyId());
-            platformConfig.getPlatformOauthClient()
-                          .verifyCallback(code);
-
-            AccessTokenDto token = platformConfig.getPlatformOauthClient()
-                                                 .getRawToken();
-            Date sessionExpires = Date.from(Instant.now()
-                                                   .plusMillis(token.getExpiresIn() * 1000));
-            fdkSession.setExpires(FdkConstants.DATE_FORMAT.get()
-                                                          .format(sessionExpires));
-            token.setAccessTokenValidity(sessionExpires.getTime());
-            Session.updateToken(token, fdkSession);
-            sessionStorage.saveSession(fdkSession);
-            request.setAttribute("session", fdkSession);
-            // Generate separate access token for offline mode
-            if (!ext.isOnlineAccessMode()) {
-                String sid = Session.generateSessionId(false, new Option(companyId, ext.getExtensionProperties()
-                                                                                       .getCluster()));
-                Session session = sessionStorage.getSession(sid);
-                if (ObjectUtils.isEmpty(session) || (!Objects.equals(session.getExtensionId(), ext.getExtensionProperties()
-                                                                                                  .getApiKey()))) {
-                    session = new Session(sid, true);
+            if (StringUtils.isNotEmpty(sessionIdForCompany)) {
+                Session fdkSession = sessionStorage.getSession(sessionIdForCompany);
+                if (Objects.isNull(fdkSession)) {
+                    throw new FdkSessionNotFound("Can not complete oauth process as session not found");
                 }
-                AccessTokenDto offlineTokenRes = platformConfig.getPlatformOauthClient()
-                                                               .getOfflineAccessToken(ext.getExtensionProperties()
-                                                                                         .getScopes(), code);
-                session.setCompanyId(companyId);
-                session.setScope(Arrays.asList(ext.getExtensionProperties()
-                                                  .getScopes()
-                                                  .split("\\s*,\\s*")));
-                session.setState(fdkSession.getState());
-                session.setExtensionId(ext.getExtensionProperties()
-                                          .getApiKey());
-                offlineTokenRes.setAccessTokenValidity(platformConfig.getPlatformOauthClient()
-                                                                     .getTokenExpiresAt());
-                offlineTokenRes.setAccessMode(AccessMode.OFFLINE.getName());
-                Session.updateToken(offlineTokenRes, session);
-                sessionStorage.saveSession(session);
-            } else {
-                fdkSession.setExpires(null);
+                if (!fdkSession.getState()
+                               .equalsIgnoreCase(state)) {
+                    throw new FdkInvalidOAuth("Invalid oauth call");
+                }
+                PlatformConfig platformConfig = ext.getPlatformConfig(fdkSession.getCompanyId());
+                platformConfig.getPlatformOauthClient()
+                              .verifyCallback(code);
+
+                AccessTokenDto token = platformConfig.getPlatformOauthClient()
+                                                     .getRawToken();
+                Date sessionExpires = Date.from(Instant.now()
+                                                       .plusMillis(token.getExpiresIn() * 1000));
+                fdkSession.setExpires(FdkConstants.DATE_FORMAT.get()
+                                                              .format(sessionExpires));
+                token.setAccessTokenValidity(sessionExpires.getTime());
+                Session.updateToken(token, fdkSession);
+                sessionStorage.saveSession(fdkSession);
+                request.setAttribute("session", fdkSession);
+                // Generate separate access token for offline mode
+                if (!ext.isOnlineAccessMode()) {
+                    String sid = Session.generateSessionId(false, new Option(companyId, ext.getExtensionProperties()
+                                                                                           .getCluster()));
+                    Session session = sessionStorage.getSession(sid);
+                    if (ObjectUtils.isEmpty(session) || (!Objects.equals(session.getExtensionId(),
+                                                                         ext.getExtensionProperties()
+                                                                            .getApiKey()))) {
+                        session = new Session(sid, true);
+                    }
+                    AccessTokenDto offlineTokenRes = platformConfig.getPlatformOauthClient()
+                                                                   .getOfflineAccessToken(ext.getExtensionProperties()
+                                                                                             .getScopes(), code);
+                    session.setCompanyId(companyId);
+                    session.setScope(Arrays.asList(ext.getExtensionProperties()
+                                                      .getScopes()
+                                                      .split("\\s*,\\s*")));
+                    session.setState(fdkSession.getState());
+                    session.setExtensionId(ext.getExtensionProperties()
+                                              .getApiKey());
+                    offlineTokenRes.setAccessTokenValidity(platformConfig.getPlatformOauthClient()
+                                                                         .getTokenExpiresAt());
+                    offlineTokenRes.setAccessMode(AccessMode.OFFLINE.getName());
+                    Session.updateToken(offlineTokenRes, session);
+                    sessionStorage.saveSession(session);
+                } else {
+                    fdkSession.setExpires(null);
+                }
+                String compCookieName = FdkConstants.SESSION_COOKIE_NAME + "_" + fdkSession.getCompanyId();
+                ResponseCookie resCookie = ResponseCookie.from(compCookieName, fdkSession.getId())
+                                                         .httpOnly(true)
+                                                         .sameSite("None")
+                                                         .secure(true)
+                                                         .path("/")
+                                                         .maxAge(Duration.between(Instant.now(), Instant.ofEpochMilli(
+                                                                 fdkSession.getExpiresIn())))
+                                                         .build();
+                if (ext.getWebhookService().isInitialized) {
+                    PlatformClient platformClient = ext.getPlatformClient(companyId, fdkSession);
+                    ext.getWebhookService()
+                       .syncEvents(platformClient, null, true);
+                }
+                String redirectUrl = ext.getCallbacks()
+                                        .getAuth()
+                                        .apply(request);
+                return ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT)
+                                     .header(Fields.X_COMPANY_ID, companyId)
+                                     .header(HttpHeaders.LOCATION, redirectUrl)
+                                     .header(HttpHeaders.SET_COOKIE, resCookie.toString())
+                                     .build();
             }
-            String compCookieName = FdkConstants.SESSION_COOKIE_NAME + "_" + fdkSession.getCompanyId();
-            ResponseCookie resCookie = ResponseCookie.from(compCookieName, fdkSession.getId())
-                                                     .httpOnly(true)
-                                                     .sameSite("None")
-                                                     .secure(true)
-                                                     .path("/")
-                                                     .maxAge(Duration.between(Instant.now(), Instant.ofEpochMilli(
-                                                             fdkSession.getExpiresIn())))
-                                                     .build();
-            if(ext.getWebhookService().isInitialized) {
-                PlatformClient platformClient = ext.getPlatformClient(companyId, fdkSession);
-                ext.getWebhookService()
-                   .syncEvents(platformClient, null, true);
-            }
-            String redirectUrl = ext.getCallbacks()
-                                    .getAuth()
-                                    .apply(request);
-            return ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT)
-                                 .header(Fields.X_COMPANY_ID, companyId)
-                                 .header(HttpHeaders.LOCATION, redirectUrl)
-                                 .header(HttpHeaders.SET_COOKIE, resCookie.toString())
-                                 .build();
         } catch (Exception error) {
             log.error("Exception in auth call ", error);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                                  .body(new Response(false, error.getMessage()));
         }
-
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                             .body(new Response(false, "Failed due to empty Session ID"));
     }
 
     private String getSessionIdFromCookie(Cookie[] cookies, String companyId) {
-        Cookie cookieFound = Arrays.stream(cookies)
+        try {
+            Cookie cookieFound = Arrays.stream(cookies)
+                                       .filter(Objects::nonNull)
+                                       .filter(cookie -> Objects.nonNull(cookie.getName()) && cookie.getName()
+                                                                                                    .contains(
+                                                                                                            "_") && cookie.getName()
+                                                                                                                          .split("_").length == 3)
                                        .filter(cookie -> cookie.getName()
                                                                .split("_")[2].equals(companyId))
-                                       .findFirst()
-                .orElseThrow();
 
-        return cookieFound.getValue();
+                                       .findFirst()
+                                       .orElseThrow(() -> new FdkSessionNotFound("Cookie not found"));
+            log.info("Cookie found : {}", cookieFound.getName());
+            return cookieFound.getValue();
+        } catch (Exception e) {
+            log.error("Failure in fetching Cookie for Company Id : {}", companyId, e);
+        }
+        return StringUtils.EMPTY;
     }
 
     @PostMapping(path = "/auto_install")
