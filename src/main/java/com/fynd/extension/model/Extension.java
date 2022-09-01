@@ -113,7 +113,7 @@ public class Extension {
         }
     }
 
-    private Response<ExtensionDetailsDTO> getExtensionDetails(
+    public Response<ExtensionDetailsDTO> getExtensionDetails(
             ExtensionProperties extensionProperties) throws IOException {
         RetrofitServiceFactory retrofitServiceFactory = new RetrofitServiceFactory();
         List<Interceptor> interceptorList = new ArrayList<>();

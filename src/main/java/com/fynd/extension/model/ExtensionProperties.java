@@ -11,8 +11,6 @@ import org.springframework.stereotype.Component;
 @Setter
 public class ExtensionProperties {
 
-    private String integrationId;
-
     private String apiKey;
 
     private String apiSecret;
