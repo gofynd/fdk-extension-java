@@ -1,9 +1,11 @@
 package com.fynd.extension.model;
 
 import com.fynd.extension.error.FdkInvalidExtensionConfig;
+import com.fynd.extension.error.FdkSessionNotFound;
 import com.fynd.extension.middleware.AccessMode;
 import com.fynd.extension.middleware.ClientCall;
 import com.fynd.extension.middleware.ExtensionInterceptor;
+import com.fynd.extension.middleware.FdkConstants;
 import com.fynd.extension.service.WebhookService;
 import com.fynd.extension.session.Session;
 import com.fynd.extension.session.SessionStorage;
@@ -23,10 +25,13 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 import retrofit2.Response;
 
+import javax.servlet.http.Cookie;
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.fynd.extension.controllers.ExtensionController.Fields.DELIMITER;
 
 @Getter
 @Setter
@@ -123,6 +128,27 @@ public class Extension {
                                                                      interceptorList);
         return clientCall.getExtensionDetails(extensionProperties.getApiKey())
                          .execute();
+    }
+
+    public String getSessionIdFromCookie(Cookie[] cookies, String companyId) {
+        try {
+            Cookie cookieFound = Arrays.stream(cookies)
+                                       .filter(Objects::nonNull)
+                                       .filter(cookie -> Objects.nonNull(cookie.getName()) && cookie.getName()
+                                                                                                    .contains(
+                                                                                                            FdkConstants.SESSION_COOKIE_NAME) && cookie.getName()
+                                                                                                                                                       .split(DELIMITER).length == 3)
+                                       .filter(cookie -> cookie.getName()
+                                                               .split(DELIMITER)[2].equals(companyId))
+
+                                       .findFirst()
+                                       .orElseThrow(() -> new FdkSessionNotFound("Cookie not found"));
+            log.info("Cookie found : {}", cookieFound.getName());
+            return cookieFound.getValue();
+        } catch (Exception e) {
+            log.error("Failure in fetching Cookie for Company Id : {}", companyId, e);
+        }
+        return StringUtils.EMPTY;
     }
 
     private static void verifyScopes(String scopes, ExtensionDetailsDTO extensionDetailsDTO) {

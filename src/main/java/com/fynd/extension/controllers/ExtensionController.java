@@ -122,7 +122,7 @@ public class ExtensionController {
                                        HttpServletRequest request, HttpServletResponse response) {
 
         try {
-            String sessionIdForCompany = getSessionIdFromCookie(request.getCookies(), companyId);
+            String sessionIdForCompany = ext.getSessionIdFromCookie(request.getCookies(), companyId);
             if (StringUtils.isNotEmpty(sessionIdForCompany)) {
                 Session fdkSession = sessionStorage.getSession(sessionIdForCompany);
                 if (Objects.isNull(fdkSession)) {
@@ -204,27 +204,6 @@ public class ExtensionController {
         }
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                              .body(new Response(false, "Failed due to empty Session ID"));
-    }
-
-    private String getSessionIdFromCookie(Cookie[] cookies, String companyId) {
-        try {
-            Cookie cookieFound = Arrays.stream(cookies)
-                                       .filter(Objects::nonNull)
-                                       .filter(cookie -> Objects.nonNull(cookie.getName()) && cookie.getName()
-                                                                                                    .contains(
-                                                                                                            FdkConstants.SESSION_COOKIE_NAME) && cookie.getName()
-                                                                                                                                                       .split(DELIMITER).length == 3)
-                                       .filter(cookie -> cookie.getName()
-                                                               .split(DELIMITER)[2].equals(companyId))
-
-                                       .findFirst()
-                                       .orElseThrow(() -> new FdkSessionNotFound("Cookie not found"));
-            log.info("Cookie found : {}", cookieFound.getName());
-            return cookieFound.getValue();
-        } catch (Exception e) {
-            log.error("Failure in fetching Cookie for Company Id : {}", companyId, e);
-        }
-        return StringUtils.EMPTY;
     }
 
     @PostMapping(path = "/auto_install")

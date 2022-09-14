@@ -3,6 +3,7 @@ package com.fynd.extension.session;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fynd.extension.middleware.AccessMode;
 import com.fynd.extension.model.Option;
 import com.sdk.common.model.AccessTokenDto;
@@ -86,5 +87,17 @@ public class Session {
         session.setRefreshToken(renewToken.getRefreshToken());
         session.setExpiresIn(renewToken.getExpiresIn());
         session.setAccessTokenValidity(renewToken.getAccessTokenValidity());
+    }
+
+    public String getUserEmailFromSession(Session session) {
+        List<Map<String,Object>> emails = new ObjectMapper().convertValue(session.getCurrentUser().get("emails"), List.class);
+        if(!emails.isEmpty()) {
+            return emails.stream()
+                  .filter(email -> email.get("primary").equals(Boolean.TRUE))
+                  .findFirst()
+                  .get()
+                  .get("email").toString();
+        }
+        return "No user";
     }
 }
