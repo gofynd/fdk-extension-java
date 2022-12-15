@@ -31,10 +31,12 @@ public class SessionStorage {
                 extension.getStorage()
                          .setex(session.getId(), ttl, objectMapper.writeValueAsString(session));
                 log.debug("Saving session Id {} with ttl {}", session.getId(), ttl);
+                log.debug("Saving session in storeSession() with ttl: {}", session);
             } else {
                 extension.getStorage()
                          .set(session.getId(), objectMapper.writeValueAsString(session));
                 log.debug("Saving session Id {} without ttl ", session.getId());
+                log.debug("Saving session in storeSession() without ttl: {}", session);
             }
         } catch (Exception e) {
             log.error("Error in saving session", e);
@@ -78,6 +80,7 @@ public class SessionStorage {
     }
 
     public Object deleteSession(String sessionId) {
+        log.debug("Deleting session for Session ID in deleteSession() : {}", sessionId);
         return extension.getStorage()
                         .del(sessionId);
     }

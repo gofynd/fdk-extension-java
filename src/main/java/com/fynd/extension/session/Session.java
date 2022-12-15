@@ -10,6 +10,7 @@ import com.sdk.common.model.AccessTokenDto;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 import org.springframework.beans.BeanUtils;
 
 import java.security.MessageDigest;
@@ -20,6 +21,7 @@ import java.util.*;
 @Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@ToString
 public class Session {
 
     @JsonProperty("current_user")

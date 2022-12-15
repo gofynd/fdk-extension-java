@@ -1,6 +1,8 @@
 package com.fynd.extension.controllers;
 
 
+import static com.fynd.extension.controllers.ExtensionController.Fields.DELIMITER;
+
 import com.fynd.extension.error.FdkInvalidOAuth;
 import com.fynd.extension.error.FdkSessionNotFound;
 import com.fynd.extension.middleware.AccessMode;
@@ -14,6 +16,15 @@ import com.fynd.extension.session.SessionStorage;
 import com.sdk.common.model.AccessTokenDto;
 import com.sdk.platform.PlatformClient;
 import com.sdk.platform.PlatformConfig;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,16 +33,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.ObjectUtils;
-import org.springframework.web.bind.annotation.*;
-
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.*;
-
-import static com.fynd.extension.controllers.ExtensionController.Fields.DELIMITER;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/fp")
@@ -151,6 +158,7 @@ public class ExtensionController {
                     String sid = Session.generateSessionId(false, new Option(companyId, ext.getExtensionProperties()
                                                                                            .getCluster()));
                     Session session = sessionStorage.getSession(sid);
+                    log.debug("Retrieving session in ExtensionController.authorize() : {}", session);
                     if (ObjectUtils.isEmpty(session) || (!Objects.equals(session.getExtensionId(),
                                                                          ext.getExtensionProperties()
                                                                             .getApiKey()))) {
@@ -170,6 +178,7 @@ public class ExtensionController {
                                                                          .getTokenExpiresAt());
                     offlineTokenRes.setAccessMode(AccessMode.OFFLINE.getName());
                     Session.updateToken(offlineTokenRes, session);
+                    log.debug("Saving session from ExtensionController.authorize() : {}", session);
                     sessionStorage.saveSession(session);
                 } else {
                     fdkSession.setExpires(null);
@@ -217,6 +226,7 @@ public class ExtensionController {
             String sid = Session.generateSessionId(false, new Option(companyId, ext.getExtensionProperties()
                                                                                    .getCluster()));
             Session session = sessionStorage.getSession(sid);
+            log.debug("Retrieving session in ExtensionController.autoInstall() : {}", session);
             if (ObjectUtils.isEmpty(session) || (!Objects.equals(session.getExtensionId(), ext.getExtensionProperties()
                                                                                               .getApiKey()))) {
                 session = new Session(sid, true);
@@ -237,6 +247,7 @@ public class ExtensionController {
             offlineTokenRes.setAccessMode(AccessMode.OFFLINE.getName());
             Session.updateToken(offlineTokenRes, session);
             if (!ext.isOnlineAccessMode()) {
+                log.debug("Saving session from ExtensionController.autoInstall() : {}", session);
                 sessionStorage.saveSession(session);
             }
             if (ext.getWebhookService().isInitialized) {
