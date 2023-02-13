@@ -13,7 +13,7 @@ import java.util.Base64;
 @Component
 public class ExtensionInterceptor implements Interceptor {
 
-    @Value("${info.build.version}")
+    @Value("${fdk-extension.version}")
     String buildVersion;
 
     private ExtensionProperties extensionProperties;
@@ -31,7 +31,7 @@ public class ExtensionInterceptor implements Interceptor {
                                .newBuilder()
                                .addHeader("Authorization", "Bearer " + bearerToken)
                                .addHeader("Content-Type", "application/json")
-                               .addHeader("x-ext-lib-version", "js/" + buildVersion)
+                               .addHeader("x-ext-lib-version", "java/" + buildVersion)
                                .build();
         return chain.proceed(request);
     }
