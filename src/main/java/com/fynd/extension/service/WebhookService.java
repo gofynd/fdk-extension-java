@@ -7,6 +7,8 @@ import com.fynd.extension.model.Criteria;
 import com.fynd.extension.model.EventMapProperties;
 import com.fynd.extension.model.ExtensionProperties;
 import com.fynd.extension.model.WebhookProperties;
+import com.sdk.common.model.FDKException;
+import com.sdk.common.model.FDKServerResponseError;
 import com.sdk.platform.PlatformClient;
 import com.sdk.platform.PlatformModels;
 import com.sdk.universal.PublicClient;
@@ -111,7 +113,7 @@ public class WebhookService {
                 }
             }
 
-        } catch (IOException e) {
+        } catch (IOException | FDKException | FDKServerResponseError e) {
             log.error("Exception occurred during Webhook Sync : ", e);
             throw new FdkWebhookRegistrationError("Failed to sync webhook events. Reason: " + e.getMessage());
         }

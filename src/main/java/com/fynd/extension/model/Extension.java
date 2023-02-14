@@ -21,6 +21,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Interceptor;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 import retrofit2.Response;
@@ -46,6 +47,9 @@ public class Extension {
     ExtensionCallback callbacks;
 
     WebhookService webhookService;
+
+    @Value("${fdk-extension.version}")
+    String buildVersion;
 
     boolean isInitialized;
 
@@ -200,7 +204,11 @@ public class Extension {
                 }
             }
         }
-        return new PlatformClient(platformConfig);
+        PlatformClient platformClient = new PlatformClient(platformConfig);
+
+        platformClient.setExtraHeader("x-ext-lib-version", "java/" + buildVersion);
+
+        return platformClient;
     }
 
     public PlatformConfig getPlatformConfig(String companyId) {
