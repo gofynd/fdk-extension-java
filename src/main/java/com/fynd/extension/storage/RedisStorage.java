@@ -42,7 +42,7 @@ public class RedisStorage extends BaseStorage {
     @Override
     public String setex(String key, int ttl, String value) {
         try (Jedis client = pool.getResource()) {
-            return client.setex(super.prefixKey + key, (long) ttl, value);
+            return client.setex(super.prefixKey + key, ttl, value);
         }
     }
 
