@@ -1,8 +1,9 @@
 package com.fynd.extension.session;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fynd.extension.constant.FdkConstants;
+import com.fynd.extension.middleware.FdkConstants;
 import com.fynd.extension.model.Extension;
+import com.fynd.extension.model.Option;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -20,22 +21,50 @@ public class SessionStorage {
     @Autowired
     ObjectMapper objectMapper;
 
+    private void storeSession(Session session, Extension extension) {
+        try {
+            if (!StringUtils.isEmpty(session.getExpires())) {
+                int ttl = (int) (new Date().getTime() - FdkConstants.DATE_FORMAT.get()
+                                                                                .parse(session.getExpires())
+                                                                                .getTime()) / 1000;
+                ttl = Math.abs(Math.round(Math.min(ttl, 0)));
+                extension.getStorage()
+                         .setex(session.getId(), ttl, objectMapper.writeValueAsString(session));
+                log.debug("Saving session Id {} with ttl {}", session.getId(), ttl);
+                log.debug("Saving session in storeSession() with ttl: {}", session);
+            } else {
+                extension.getStorage()
+                         .set(session.getId(), objectMapper.writeValueAsString(session));
+                log.debug("Saving session Id {} without ttl ", session.getId());
+                log.debug("Saving session in storeSession() without ttl: {}", session);
+            }
+        } catch (Exception e) {
+            log.error("Error in saving session", e);
+        }
+    }
 
-    public void saveSession(Session session) throws Exception {
-        if (!StringUtils.isEmpty(session.getExpires())) {
-            int ttl = (int) (new Date().getTime() - FdkConstants.DATE_FORMAT.get()
-                                                                            .parse(session.getExpires())
-                                                                            .getTime()) / 1000;
-            ttl = Math.abs(Math.round(Math.min(ttl, 0)));
-            extension.getStorage()
-                     .setex(session.getId(), ttl, objectMapper.writeValueAsString(session));
-        } else {
-            extension.getStorage()
-                     .set(session.getId(), objectMapper.writeValueAsString(session));
+    public void saveSession(Session session) {
+        storeSession(session, extension);
+    }
+
+    public void saveSession(Session session, Extension extension) {
+        objectMapper = new ObjectMapper();
+        storeSession(session, extension);
+    }
+
+    public Session getSessionFromCompany(String companyId) {
+        try {
+            String sid = Session.generateSessionId(false, new Option(companyId, extension.getExtensionProperties()
+                                                                            .getCluster()));
+            return getSession(sid);
+        } catch (Exception e) {
+            log.error("Exception in getting session for company ID : {}", companyId, e);
+            return null;
         }
     }
 
     public Session getSession(String sessionId) {
+        log.debug("Retrieving session for Session ID : {}", sessionId);
         var sessionStr = extension.getStorage()
                                   .get(sessionId);
         Session session = null;
@@ -51,6 +80,7 @@ public class SessionStorage {
     }
 
     public Object deleteSession(String sessionId) {
+        log.debug("Deleting session for Session ID in deleteSession() : {}", sessionId);
         return extension.getStorage()
                         .del(sessionId);
     }

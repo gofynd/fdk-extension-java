@@ -1,10 +1,12 @@
 package com.fynd.extension.model;
 
+import com.fynd.extension.session.Session;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -14,11 +16,13 @@ import java.util.function.Function;
 @AllArgsConstructor
 public class ExtensionCallback {
 
-    private Function<Map<String,Object>,String> auth;
+    private Function<HttpServletRequest,String> auth;
 
-    private Function<Map<String,Object>,String> install;
+    private Function<HttpServletRequest,String> install;
 
-    private Function<Map<String,Object>,String> uninstall;
+    private Function<HttpServletRequest,String> uninstall;
+
+    private Function<HttpServletRequest,String> autoInstall;
 
 
 
