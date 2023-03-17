@@ -17,7 +17,7 @@
 		<json.version>20211205</json.version>
 		<jedis.version>4.3.1</jedis.version>
 		<commons.version>1.7</commons.version>
-		<fdk-client.version>1.0.0-inv-SNAPSHOT</fdk-client.version>
+		<fdk-client.version>v1.0.0</fdk-client.version>
 	</properties>
 	<dependencies>
 		<dependency>
