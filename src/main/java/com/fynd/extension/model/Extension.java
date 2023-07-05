@@ -93,15 +93,30 @@ public class Extension {
         } catch (Exception e) {
             log.error("Failed in getting Extension details", e);
         }
-        if (!isValid(extensionProperties.getBaseUrl())) {
-            throw new FdkInvalidExtensionConfig("Invalid baseUrl");
-        } else if (StringUtils.isNotEmpty(extensionProperties.getBaseUrl()) &&
-                Objects.nonNull(extensionDetails)) {
-            extensionProperties.setBaseUrl(extensionDetails.getBaseUrl());
+
+        if (StringUtils.isNotEmpty(extensionProperties.getBaseUrl())) {
+            if (!isValid(extensionProperties.getBaseUrl())) {
+                throw new FdkInvalidExtensionConfig("Invalid baseUrl");
+            }
+        } else {
+            if (Objects.nonNull(extensionDetails)) {
+                extensionProperties.setBaseUrl(extensionDetails.getBaseUrl());
+            } else {
+                throw new FdkInvalidExtensionConfig("Invalid Extension details");
+            }
         }
-        if (StringUtils.isNotEmpty(extensionProperties.getScopes())) {
-            verifyScopes(extensionProperties.getScopes(), extensionDetails);
+
+        List<String> scopeList = extensionProperties.getScopes();
+        if (scopeList != null && !scopeList.isEmpty()) {
+            verifyScopes(scopeList, extensionDetails);
+        } else {
+            if (Objects.nonNull(extensionDetails)) {
+                extensionProperties.setScopes(extensionDetails.getScope());
+            } else {
+                throw new FdkInvalidExtensionConfig("Invalid Extension details");
+            }
         }
+
         extension.setExtensionProperties(extensionProperties);
         log.info("Extension initialized");
         if (Objects.nonNull(extensionProperties.getWebhook())) {
@@ -155,8 +170,7 @@ public class Extension {
         return StringUtils.EMPTY;
     }
 
-    private static void verifyScopes(String scopes, ExtensionDetailsDTO extensionDetailsDTO) {
-        List<String> scopeList = Arrays.asList(scopes.split("\\s*,\\s*"));
+    private static void verifyScopes(List<String> scopeList, ExtensionDetailsDTO extensionDetailsDTO) {
         List<String> missingScopes = scopeList.stream()
                                               .filter(val -> !extensionDetailsDTO.getScope()
                                                                                  .contains(val))

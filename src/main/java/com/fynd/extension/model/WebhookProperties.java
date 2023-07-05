@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.List;
+import java.util.Optional;
 
 @Getter
 @Setter
@@ -18,4 +19,12 @@ public class WebhookProperties {
     private List<EventMapProperties> eventMap;
 
     private Boolean subscribeOnInstall;
+
+    public String getSubscribedSalesChannel() {
+        return subscribedSalesChannel;
+    }
+
+    public void setSubscribedSalesChannel(String subscribedSalesChannel) {
+        this.subscribedSalesChannel = Optional.ofNullable(subscribedSalesChannel).orElse(null);
+    }
 }
