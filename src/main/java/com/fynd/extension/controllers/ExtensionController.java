@@ -18,7 +18,6 @@ import com.sdk.platform.PlatformClient;
 import com.sdk.platform.PlatformConfig;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
