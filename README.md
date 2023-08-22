@@ -118,16 +118,31 @@ public class RedisService {
 #### How to call platform apis?
 
 To call platform api you need to have instance of `PlatformClient`. Instance holds methods for SDK classes.
+
+extend `BasePlatformController` class to create controller which will add `PlatformClient` in request.
+
 ```java
-public class Service {
-    PlatformClient platformClient = ExtensionContext.get("platform-client",PlatformClient.class);
-    Session session = ExtensionContext.get("fdk-session", Session.class);
-    PlatformModels.ResponseEnvelopeListJobConfigDTO listDto = platformClient.inventory.getJobByCompanyAndIntegration(
-            Integer.valueOf(session.getCompany_id()),
-            extensionProperties.getIntegration_id(), 1, 1);
-        
-    PlatformModels.ResponseEnvelopeJobConfigDTO configDefaults = platformClient.inventory.getJobConfigDefaults(
-            Integer.valueOf(session.getCompany_id()));
+@RestController
+@RequestMapping("/api/v1")
+@Slf4j
+public class PlatformController extends BasePlatformController {
+
+
+    @GetMapping(value = "/applications", produces = "application/json")
+    public ConfigurationPlatformModels.ApplicationsResponse getApplications(HttpServletRequest request) {
+        try {
+            PlatformClient platformClient = (PlatformClient) request.getAttribute("platformClient");
+            ConfigurationPlatformModels.ApplicationsResponse applications
+                    = platformClient.configuration.getApplications(1, 100, "");
+
+            return applications;
+
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            throw new RuntimeException(e);
+        }
+
+    }
 }
 ```
 

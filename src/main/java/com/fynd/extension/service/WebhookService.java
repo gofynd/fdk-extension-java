@@ -208,7 +208,8 @@ public class WebhookService {
     }
 
     private String getCriteria(WebhookProperties webhookProperties, List<String> applicationIds) {
-        if (webhookProperties.getSubscribedSalesChannel()
+        if (StringUtils.isNotEmpty(this.extensionProperties.getWebhook().getSubscribedSalesChannel())
+                && webhookProperties.getSubscribedSalesChannel()
                              .equals(Fields.SPECIFIC_CHANNEL)) {
             return CollectionUtils.isEmpty(applicationIds) ? Criteria.EMPTY.getValue() : Criteria.SPECIFIC.getValue();
         }
@@ -346,7 +347,8 @@ public class WebhookService {
         if (!this.isInitialized) {
             throw new FdkInvalidWebhookConfig(Fields.WEBHOOK_NOT_INITIALISED_ERROR);
         }
-        if (!this.extensionProperties.getWebhook()
+        if (StringUtils.isNotEmpty(this.extensionProperties.getWebhook().getSubscribedSalesChannel())
+                && !this.extensionProperties.getWebhook()
                                      .getSubscribedSalesChannel()
                                      .equals(Fields.SPECIFIC_CHANNEL)) {
             throw new FdkWebhookRegistrationError("subscribed_sales channel is not set to specific in webhook config");
@@ -386,7 +388,8 @@ public class WebhookService {
         if (!this.isInitialized) {
             throw new FdkInvalidWebhookConfig(Fields.WEBHOOK_NOT_INITIALISED_ERROR);
         }
-        if (!this.extensionProperties.getWebhook()
+        if (StringUtils.isNotEmpty(this.extensionProperties.getWebhook().getSubscribedSalesChannel())
+                && !this.extensionProperties.getWebhook()
                                      .getSubscribedSalesChannel()
                                      .equals(Fields.SPECIFIC_CHANNEL)) {
             throw new FdkWebhookRegistrationError("subscribed_sales channel is not set to specific in webhook config");

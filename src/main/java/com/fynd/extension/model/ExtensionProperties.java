@@ -5,6 +5,9 @@ import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+import java.util.Optional;
+
 @ConfigurationProperties(prefix = "ext")
 @Component
 @Getter
@@ -15,7 +18,7 @@ public class ExtensionProperties {
 
     private String apiSecret;
 
-    private String scopes;
+    private List<String> scopes;
 
     private String baseUrl;
 
@@ -25,4 +28,27 @@ public class ExtensionProperties {
 
     private WebhookProperties webhook;
 
+    public String getBaseUrl() {
+        return baseUrl;
+    }
+
+    public void setBaseUrl(String baseUrl) {
+        this.baseUrl = Optional.ofNullable(baseUrl).orElse(null);
+    }
+
+   public WebhookProperties getWebhook() {
+        return webhook;
+   }
+
+   public void setWebhook(WebhookProperties webhook) {
+        this.webhook = Optional.ofNullable(webhook).orElse(null);
+   }
+
+   public List<String> getScopes() {
+        return scopes;
+   }
+
+   public void setScopes(List<String> scopes) {
+        this.scopes = Optional.ofNullable(scopes).orElse(null);
+   }
 }

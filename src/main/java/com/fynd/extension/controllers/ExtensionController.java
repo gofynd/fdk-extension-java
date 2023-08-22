@@ -18,7 +18,6 @@ import com.sdk.platform.PlatformClient;
 import com.sdk.platform.PlatformConfig;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
@@ -68,9 +67,7 @@ public class ExtensionController {
                                                    .plusMillis(Fields.MINUTES_LIMIT));
             if (session.isNew()) {
                 session.setCompanyId(companyId);
-                session.setScope(Arrays.asList(ext.getExtensionProperties()
-                                                  .getScopes()
-                                                  .split("\\s*,\\s*")));
+                session.setScope(ext.getExtensionProperties().getScopes());
                 session.setExpires(FdkConstants.DATE_FORMAT.get()
                                                            .format(sessionExpires));
                 session.setExpiresIn(sessionExpires.getTime());
@@ -165,12 +162,9 @@ public class ExtensionController {
                         session = new Session(sid, true);
                     }
                     AccessTokenDto offlineTokenRes = platformConfig.getPlatformOauthClient()
-                                                                   .getOfflineAccessToken(ext.getExtensionProperties()
-                                                                                             .getScopes(), code);
+                                                                   .getOfflineAccessToken(String.join(",", ext.getExtensionProperties().getScopes()), code);
                     session.setCompanyId(companyId);
-                    session.setScope(Arrays.asList(ext.getExtensionProperties()
-                                                      .getScopes()
-                                                      .split("\\s*,\\s*")));
+                    session.setScope(ext.getExtensionProperties().getScopes());
                     session.setState(fdkSession.getState());
                     session.setExtensionId(ext.getExtensionProperties()
                                               .getApiKey());
@@ -232,12 +226,12 @@ public class ExtensionController {
                 session = new Session(sid, true);
             }
             AccessTokenDto offlineTokenRes = platformConfig.getPlatformOauthClient()
-                                                           .getOfflineAccessToken(ext.getExtensionProperties()
-                                                                                     .getScopes(), code);
+                                                           .getOfflineAccessToken(
+                                                                   String.join(
+                                                                   ",", ext.getExtensionProperties().getScopes()),
+                                                                   code);
             session.setCompanyId(companyId);
-            session.setScope(Arrays.asList(ext.getExtensionProperties()
-                                              .getScopes()
-                                              .split("\\s*,\\s*")));
+            session.setScope(ext.getExtensionProperties().getScopes());
             session.setState(UUID.randomUUID()
                                  .toString());
             session.setExtensionId(ext.getExtensionProperties()
