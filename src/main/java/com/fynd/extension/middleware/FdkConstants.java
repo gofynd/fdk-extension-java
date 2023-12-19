@@ -5,6 +5,8 @@ import java.text.SimpleDateFormat;
 public class FdkConstants {
 
     public static final String SESSION_COOKIE_NAME = "ext_session";
+    public static final String ADMIN_SESSION_COOKIE_NAME = "ext_adm_session";
+
 
     public static final ThreadLocal<SimpleDateFormat> DATE_FORMAT = new ThreadLocal<SimpleDateFormat>() {
         @Override

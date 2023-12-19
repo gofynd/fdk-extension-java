@@ -58,6 +58,9 @@ public class Session {
     @JsonProperty("extension_id")
     private String extensionId;
 
+    @JsonProperty("organization_id")
+    private String organizationId;
+
     public Session(String id, boolean isNew) {
         this.id = id;
         this.isNew = isNew;

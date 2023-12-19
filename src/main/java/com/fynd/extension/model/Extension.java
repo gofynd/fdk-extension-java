@@ -15,6 +15,8 @@ import com.sdk.common.RetrofitServiceFactory;
 import com.sdk.common.model.AccessTokenDto;
 import com.sdk.platform.PlatformClient;
 import com.sdk.platform.PlatformConfig;
+import com.sdk.partner.PartnerConfig;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -170,6 +172,26 @@ public class Extension {
         return StringUtils.EMPTY;
     }
 
+    public String getCookieValue(Cookie[] cookies) {
+        try{
+            // Replace "yourDynamicCookieName" with the actual dynamic cookie name
+            String dynamicCookieName = FdkConstants.ADMIN_SESSION_COOKIE_NAME;
+            if (cookies != null) {
+                for (Cookie cookie : cookies) {
+                    // Check if the cookie name matches the dynamic name
+                    if (dynamicCookieName.equals(cookie.getName())) {
+                        // Process the cookie value
+                        return cookie.getValue();
+                    }
+                }
+            }
+            throw new FdkSessionNotFound("Cookie not found");
+        } catch (Exception e) {
+            log.error("Failure in fetching Cookie : {}", e);
+        }
+        return StringUtils.EMPTY;
+    }
+
     private static void verifyScopes(List<String> scopeList, ExtensionDetailsDTO extensionDetailsDTO) {
         List<String> missingScopes = scopeList.stream()
                                               .filter(val -> !extensionDetailsDTO.getScope()
@@ -230,6 +252,16 @@ public class Extension {
             throw new FdkInvalidExtensionConfig("Extension not initialized due to invalid data");
         }
         return new PlatformConfig(companyId, this.extensionProperties.getApiKey(),
+                this.extensionProperties.getApiSecret(), this.extensionProperties.getCluster(),
+                false);
+    }
+    
+    public PartnerConfig getPartnerConfig(String organizationId) {
+        if (!this.isInitialized) {
+            throw new FdkInvalidExtensionConfig("Extension not initialized due to invalid data");
+        }
+        return new PartnerConfig(
+                organizationId, this.extensionProperties.getApiKey(),
                                   this.extensionProperties.getApiSecret(), this.extensionProperties.getCluster(),
                                   false);
     }
