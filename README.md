@@ -3,16 +3,20 @@
 FDK Extension Helper Library
 
 #### Initial Setup
-1. Create Maven project and add the dependency in the pom.xml 
-```
-<dependency>
-    <groupId>com.github.gofynd</groupId>
-    <artifactId>fdk-extension-java</artifactId>
-    <version><LATEST_VERSION></version>
-</dependency>
-```
+
+1. Create Maven project and add the dependency in the pom.xml
+
+    ```xml
+    <dependency>
+        <groupId>com.github.gofynd</groupId>
+        <artifactId>fdk-extension-java</artifactId>
+        <version><LATEST_VERSION></version>
+    </dependency>
+    ```
+
 2. Add the Jitpack Repo to your root pom.xml:
-   ```
+
+   ```xml
    <repositories>
         <repository>
             <id>jitpack.io</id>
@@ -20,7 +24,9 @@ FDK Extension Helper Library
         </repository>
     </repositories>
     ```
+
 3. Add Extension specific Configuration properties in application.yml file
+
     ```yaml
     redis :
       host : 'redis://127.0.0.1:6379'
@@ -33,7 +39,9 @@ FDK Extension Helper Library
       base_url : 'https://test.extension.com'
       access_mode : 'offline'
     ```
+
 4. Create Main Application class and Initialise the Extension using the properties.
+
 ```java
 @SpringBootApplication
 @ComponentScan(basePackages = {"com.fynd.**", "com.fynd.**","com.gofynd","com.sdk.**"})
@@ -76,6 +84,7 @@ public class EmailExtensionApplication {
 ```
 
 5. Define Redis Service which is used to save the intermediate Sessions for each CompanyID
+
 ```java
 public class RedisService {
 
@@ -146,7 +155,37 @@ public class PlatformController extends BasePlatformController {
 }
 ```
 
+#### How to get platformClient for offline access_mode?
+
+To obtain the `PlatformClient` for offline access mode in your Java extension, use the provided `ExtensionService` class.
+This example demonstrates how to retrieve applications using the obtained `PlatformClient`
+
+```java
+@RestController
+@RequestMapping("/api/v1")
+public class ExampleOfflineAccessMode {
+
+    @Autowired
+    ExtensionService extensionService;
+
+    @GetMapping(value = "/applications", produces = "application/json")
+    public ConfigurationPlatformModels.ApplicationsResponse getApplications() {
+        try {
+            String companyId = "1";
+            PlatformClient platformClient = extensionService.getPlatformClient(companyId);
+
+            return platformClient.configuration.getApplications(1, 100, "");
+
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+}
+```
+
 #### How to register for Webhook Events?
+
 Webhook events can be helpful to handle tasks when certain events occur on platform. You can subscribe to such events by passing **webhook** in Extension Configuration Property
 
 1. Add the Configuration property in Extension yaml File
@@ -215,17 +254,16 @@ public class WebhookController {
 }
 ```
 
-> Setting `subscribed_saleschannel` as "specific" means, you will have to manually subscribe saleschannel level event for individual saleschannel. Default value here is "all" and event will be subscribed for all sales channels. 
+> Setting `subscribed_saleschannel` as "specific" means, you will have to manually subscribe saleschannel level event for individual saleschannel. Default value here is "all" and event will be subscribed for all sales channels.
 
 > For enabling events manually use function `enableSalesChannelWebhook`
-> 
+>
 > To disable receiving events for a saleschannel use function `disableSalesChannelWebhook`.
 
-
 ##### How webhook registry subscribes to webhooks on Fynd Platform?
+
 After webhook config is passed to initialize whenever extension is launched to any of companies where extension is installed or to be installed, webhook config data is used to create webhook subscriber on Fynd Platform for that company.
 
 > Any update to webhook config will not automatically update subscriber data on Fynd Platform for a company until extension is opened atleast once after the update.
 
-Other way to update webhook config manually for a company is to call `syncEvents` function of webhookRegistery.   
-
+Other way to update webhook config manually for a company is to call `syncEvents` function of webhookRegistry.
