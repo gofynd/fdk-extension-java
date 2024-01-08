@@ -287,10 +287,32 @@ public class MyCustomStorage extends BaseStorage {
             return storgeClient.get(super.prefixKey + key);
         }
     }
-    .
-    .
-    .
+    
     //  All of the below methods need to be implemented as per your chosen databse
+
+    public String set(String key, String value) {
+        // Implementation of a set method
+    }
+
+    public Object del(String key) {
+        // Implementation of a del method
+    }
+
+    public String setex(String key, int ttl, String value) {
+        // Implementation of a setex method
+    }
+
+    public String hget(String key, String hashKey) {
+        // Implementation of a hget method
+    }
+
+    public Object hset(String key, String hashKey, String value) {
+        // Implementation of a hset method       
+    }
+
+    public Map<String, Object> hgetall(String key) {
+        // Implementation of a hgetall method
+    }
 }
 
 ```
