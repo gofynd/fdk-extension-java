@@ -276,7 +276,7 @@ public class WebhookService {
                                 WebhookPlatformModels.SubscriberConfig newEvents) {
         Set<Integer> existingEventIds = existingEvents.getEventConfigs()
                                                       .stream()
-                                                      .map(WebhookPlatformModels.EventConfig::getId)
+                                                      .map(WebhookPlatformModels.EventConfigs::getId)
                                                       .collect(Collectors.toSet());
         List<Integer> uniques = new ArrayList<>(newEvents.getEventId());
         if (existingEventIds.size() > uniques.size()) {
