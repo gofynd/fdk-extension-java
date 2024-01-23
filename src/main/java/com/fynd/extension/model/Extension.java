@@ -13,6 +13,7 @@ import com.fynd.extension.storage.BaseStorage;
 import com.sdk.common.RequestSignerInterceptor;
 import com.sdk.common.RetrofitServiceFactory;
 import com.sdk.common.model.AccessTokenDto;
+import com.sdk.partner.PartnerClient;
 import com.sdk.platform.PlatformClient;
 import com.sdk.platform.PlatformConfig;
 import com.sdk.partner.PartnerConfig;
@@ -261,9 +262,51 @@ public class Extension {
             throw new FdkInvalidExtensionConfig("Extension not initialized due to invalid data");
         }
         return new PartnerConfig(
-                organizationId, this.extensionProperties.getApiKey(),
-                                  this.extensionProperties.getApiSecret(), this.extensionProperties.getCluster(),
-                                  false);
+                organizationId,
+                this.extensionProperties.getApiKey(),
+                this.extensionProperties.getApiSecret(),
+                this.extensionProperties.getCluster(),
+                false
+        );
+    }
+
+    public PartnerClient getPartnerClient(String organizationId, Session session){
+        if (!this.isInitialized) {
+            throw new FdkInvalidExtensionConfig("Extension not initialized due to invalid data");
+        }
+
+        PartnerConfig partnerConfig = this.getPartnerConfig(organizationId);
+
+        AccessTokenDto accessTokenDto = buildAccessToken(session);
+
+        partnerConfig.getPartnerOauthClient().setToken(accessTokenDto);
+        partnerConfig.getPartnerOauthClient().setTokenExpiresAt(session.getAccessTokenValidity());
+
+        if (Objects.nonNull(session.getAccessTokenValidity()) && Objects.nonNull(session.getRefreshToken())) {
+            boolean acNrExpired = ((session.getAccessTokenValidity() - new Date().getTime()) / 1000) <= 120;
+            if (acNrExpired) {
+                try {
+                    log.debug("Renewing access token for organization {} with partner config {}", organizationId,
+                            partnerConfig);
+                    AccessTokenDto renewTokenRes = partnerConfig.getPartnerOauthClient()
+                            .renewAccesstoken();
+                    renewTokenRes.setAccessTokenValidity(partnerConfig.getPartnerOauthClient()
+                            .getTokenExpiresAt());
+                    Session.updateToken(renewTokenRes, session);
+                    SessionStorage sessionStorage = new SessionStorage();
+                    sessionStorage.saveSession(session, this);
+                    log.info("Access token renewed for organization : " + organizationId);
+                } catch (Exception e) {
+                    log.error("Exception occurred in renewing access token ", e);
+                }
+            }
+        }
+
+        PartnerClient partnerClient = new PartnerClient(partnerConfig);
+
+        partnerClient.setExtraHeader("x-ext-lib-version", "java/" + buildVersion);
+
+        return partnerClient;
     }
 
     private AccessTokenDto buildAccessToken(Session session) {
