@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class Option {
 
-    private String company_id;
+    private String id;
 
     private String cluster;
 }
