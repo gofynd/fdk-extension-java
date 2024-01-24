@@ -195,7 +195,6 @@ public class ExtensionADMController {
 
         public interface Fields {
             int MINUTES_LIMIT = 900000;
-            String X_COMPANY_ID = "x-company-id";
             String DELIMITER = "_";
         }
     
