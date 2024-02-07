@@ -184,6 +184,35 @@ public class ExampleOfflineAccessMode {
 }
 ```
 
+#### How to call partner apis?
+
+To call partner api you need to have instance of `PartnerClient`. Instance holds methods for SDK classes.
+
+extend `BasePartnerController` class to create controller which will add `PartnerClient` in request.
+
+```java
+@RestController
+@RequestMapping("/api/v1")
+@Slf4j
+public class PartnerController extends BasePartnerController {    
+
+    @GetMapping(value = "/orgThemes", produces = "application/json")
+    public ThemePartnerModels.MarketplaceThemeSchema getOrgThemes(HttpServletRequest request) {
+        try {
+            PartnerClient partnerClient = (PartnerClient) request.getAttribute("partnerClient");
+            ThemePartnerModels.MarketplaceThemeSchema orgThemes = partnerClient.theme.getOrganizationThemes("published", null, null);
+
+            return orgThemes;
+
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            throw new RuntimeException(e);
+        }
+
+    }
+}
+```
+
 #### How to register for Webhook Events?
 
 Webhook events can be helpful to handle tasks when certain events occur on platform. You can subscribe to such events by passing **webhook** in Extension Configuration Property
