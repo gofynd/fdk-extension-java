@@ -2,11 +2,13 @@ package com.fynd.extension.middleware;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fynd.extension.controllers.BaseApplicationController;
+import com.fynd.extension.controllers.BasePartnerController;
 import com.fynd.extension.controllers.BasePlatformController;
 import com.fynd.extension.model.*;
 import com.fynd.extension.session.Session;
 import com.sdk.application.ApplicationClient;
 import com.sdk.application.ApplicationConfig;
+import com.sdk.partner.PartnerClient;
 import com.sdk.platform.PlatformClient;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -32,6 +34,9 @@ public class ControllerInterceptor implements HandlerInterceptor {
 
     @Autowired
     SessionInterceptor sessionInterceptor;
+
+    @Autowired
+    PartnerSessionInterceptor partnerSessionInterceptor;
 
     @Override
     public boolean preHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull Object handler) {
@@ -77,6 +82,19 @@ public class ControllerInterceptor implements HandlerInterceptor {
                         request.setAttribute("applicationClient", applicationClient);
                     }
                     return true;
+                }
+                else if(controller instanceof BasePartnerController){
+
+                    boolean isSessionInterceptorPassed = partnerSessionInterceptor.preHandle(request, response, handler);
+
+                    log.info("[PARTNER INTERCEPTOR]");
+                    Session fdkSession = (Session) request.getAttribute("fdkSession");
+                    PartnerClient partnerClient = extension.getPartnerClient(fdkSession.getOrganizationId(), fdkSession);
+
+                    request.setAttribute("partnerClient", partnerClient);
+                    request.setAttribute("extension", extension);
+
+                    return isSessionInterceptorPassed;
                 }
             }
 

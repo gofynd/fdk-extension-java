@@ -58,6 +58,9 @@ public class Session {
     @JsonProperty("extension_id")
     private String extensionId;
 
+    @JsonProperty("organization_id")
+    private String organizationId;
+
     public Session(String id, boolean isNew) {
         this.id = id;
         this.isNew = isNew;
@@ -77,7 +80,7 @@ public class Session {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             return Base64.getEncoder()
                          .encodeToString(
-                                 digest.digest((options.getCluster() + ":" + options.getCompany_id()).getBytes()));
+                                 digest.digest((options.getCluster() + ":" + options.getId()).getBytes()));
         }
     }
 

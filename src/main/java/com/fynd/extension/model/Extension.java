@@ -13,8 +13,11 @@ import com.fynd.extension.storage.BaseStorage;
 import com.sdk.common.RequestSignerInterceptor;
 import com.sdk.common.RetrofitServiceFactory;
 import com.sdk.common.model.AccessTokenDto;
+import com.sdk.partner.PartnerClient;
 import com.sdk.platform.PlatformClient;
 import com.sdk.platform.PlatformConfig;
+import com.sdk.partner.PartnerConfig;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -170,6 +173,26 @@ public class Extension {
         return StringUtils.EMPTY;
     }
 
+    public String getCookieValue(Cookie[] cookies) {
+        try{
+            // Replace "yourDynamicCookieName" with the actual dynamic cookie name
+            String dynamicCookieName = FdkConstants.ADMIN_SESSION_COOKIE_NAME;
+            if (cookies != null) {
+                for (Cookie cookie : cookies) {
+                    // Check if the cookie name matches the dynamic name
+                    if (dynamicCookieName.equals(cookie.getName())) {
+                        // Process the cookie value
+                        return cookie.getValue();
+                    }
+                }
+            }
+            throw new FdkSessionNotFound("Cookie not found");
+        } catch (Exception e) {
+            log.error("Failure in fetching Cookie : {}", e);
+        }
+        return StringUtils.EMPTY;
+    }
+
     private static void verifyScopes(List<String> scopeList, ExtensionDetailsDTO extensionDetailsDTO) {
         List<String> missingScopes = scopeList.stream()
                                               .filter(val -> !extensionDetailsDTO.getScope()
@@ -230,8 +253,60 @@ public class Extension {
             throw new FdkInvalidExtensionConfig("Extension not initialized due to invalid data");
         }
         return new PlatformConfig(companyId, this.extensionProperties.getApiKey(),
-                                  this.extensionProperties.getApiSecret(), this.extensionProperties.getCluster(),
-                                  false);
+                this.extensionProperties.getApiSecret(), this.extensionProperties.getCluster(),
+                false);
+    }
+    
+    public PartnerConfig getPartnerConfig(String organizationId) {
+        if (!this.isInitialized) {
+            throw new FdkInvalidExtensionConfig("Extension not initialized due to invalid data");
+        }
+        return new PartnerConfig(
+                organizationId,
+                this.extensionProperties.getApiKey(),
+                this.extensionProperties.getApiSecret(),
+                this.extensionProperties.getCluster(),
+                false
+        );
+    }
+
+    public PartnerClient getPartnerClient(String organizationId, Session session){
+        if (!this.isInitialized) {
+            throw new FdkInvalidExtensionConfig("Extension not initialized due to invalid data");
+        }
+
+        PartnerConfig partnerConfig = this.getPartnerConfig(organizationId);
+
+        AccessTokenDto accessTokenDto = buildAccessToken(session);
+
+        partnerConfig.getPartnerOauthClient().setToken(accessTokenDto);
+        partnerConfig.getPartnerOauthClient().setTokenExpiresAt(session.getAccessTokenValidity());
+
+        if (Objects.nonNull(session.getAccessTokenValidity()) && Objects.nonNull(session.getRefreshToken())) {
+            boolean acNrExpired = ((session.getAccessTokenValidity() - new Date().getTime()) / 1000) <= 120;
+            if (acNrExpired) {
+                try {
+                    log.debug("Renewing access token for organization {} with partner config {}", organizationId,
+                            partnerConfig);
+                    AccessTokenDto renewTokenRes = partnerConfig.getPartnerOauthClient()
+                            .renewAccesstoken();
+                    renewTokenRes.setAccessTokenValidity(partnerConfig.getPartnerOauthClient()
+                            .getTokenExpiresAt());
+                    Session.updateToken(renewTokenRes, session);
+                    SessionStorage sessionStorage = new SessionStorage();
+                    sessionStorage.saveSession(session, this);
+                    log.info("Access token renewed for organization : " + organizationId);
+                } catch (Exception e) {
+                    log.error("Exception occurred in renewing access token ", e);
+                }
+            }
+        }
+
+        PartnerClient partnerClient = new PartnerClient(partnerConfig);
+
+        partnerClient.setExtraHeader("x-ext-lib-version", "java/" + buildVersion);
+
+        return partnerClient;
     }
 
     private AccessTokenDto buildAccessToken(Session session) {
