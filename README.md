@@ -229,9 +229,11 @@ webhook:
     -
       name: 'extension/install'
       handler: extensionInstallHandler #Make sure this matches the Component Bean name
+      provider: 'rest' # If not provided, Default is 'rest'
     -
       name: 'product/update'
       handler: productCreateHandler
+      provider: 'kafka'
     -
       name: 'product/update'
       handler: productCreateApplicationHandler
