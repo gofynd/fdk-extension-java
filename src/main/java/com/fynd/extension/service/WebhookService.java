@@ -57,7 +57,6 @@ public class WebhookService {
     private Map<String, EventMapProperties> restEventMap;
     private Map<String, EventMapProperties> kafkaEventMap;
 
-    // Done
     public void syncEvents(PlatformClient platformClient, ExtensionProperties extensionProperties,
                            Boolean enableWebhooks) {
         if (!this.isInitialized) {
@@ -74,7 +73,6 @@ public class WebhookService {
         syncSubscriberConfig(subscriberResponseContainer.getKafka(), "kafka", platformClient, enableWebhooks);
     }
 
-    // Done
     void syncSubscriberConfig(WebhookPlatformModels.SubscriberResponse subscriberResponse, String configType, PlatformClient platformClient, Boolean enableWebhooks) {
         try {
 
@@ -136,7 +134,7 @@ public class WebhookService {
             throw new RuntimeException(e);
         }
     }
-    // Done
+    
     public void initialize(ExtensionProperties extensionProperties) {
         this.extensionProperties = extensionProperties;
         this.webhookProperties = extensionProperties.getWebhook();
@@ -168,7 +166,7 @@ public class WebhookService {
         restEventMap = new HashMap<String, EventMapProperties>();
         kafkaEventMap = new HashMap<String, EventMapProperties>();
 
-        // Validate Webhook eventMap details
+        //4. Validate Webhook eventMap details
         for(EventMapProperties event: webhookProperties.getEventMap()){
             if(StringUtils.isEmpty(event.getName()) || event.getName().split("/").length != 2){
                 throw new FdkInvalidWebhookConfig("Invalid/Missing webhook event name. Invalid name: " + event.getName());
@@ -203,7 +201,7 @@ public class WebhookService {
             }
         }
 
-        //4. Validate Webhook events
+        //5. Validate Webhook events
         WebhookPublicModels.EventConfigResponse eventConfigResponse = getEventConfig(webhookProperties.getEventMap());
         List<String> errorWebhooks = validateEvents(webhookProperties.getEventMap(), eventConfigResponse);
         if (!errorWebhooks.isEmpty()) {
@@ -261,7 +259,6 @@ public class WebhookService {
         log.info("Events opted for " + configType + " : " + eventList);
         return eventList;
     }
-
 
     private String getCriteria(WebhookProperties webhookProperties, List<String> applicationIds) {
         if (StringUtils.isNotEmpty(this.extensionProperties.getWebhook().getSubscribedSalesChannel())
@@ -374,7 +371,6 @@ public class WebhookService {
             throw new FdkInvalidWebhookConfig("Error in Webhook Event Details due to Missing / Invalid Data");
         }
     }
-
 
     private List<String> validateEvents(List<EventMapProperties> eventMap,
                                         WebhookPublicModels.EventConfigResponse eventConfigResponse) {
