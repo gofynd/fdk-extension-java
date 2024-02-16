@@ -229,15 +229,20 @@ webhook:
     -
       name: 'extension/install'
       handler: extensionInstallHandler #Make sure this matches the Component Bean name
+      category: 'application'
+      version: '1'
       provider: 'rest' # If not provided, Default is 'rest'
     -
       name: 'product/update'
       handler: productCreateHandler
+      category: 'application'
+      version: '1'
       provider: 'kafka'
     -
       name: 'product/update'
       handler: productCreateApplicationHandler
-      category: 'application' # optional unless multiple event with same name are present at company and saleschannel
+      category: 'application'
+      version: '1'
 
 ```
 
