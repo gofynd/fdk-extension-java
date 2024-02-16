@@ -213,7 +213,6 @@ public class WebhookService {
         log.info("Webhook registry initialized");
     }
 
-    // Done
     private SubscriberConfigContainer getSubscriberConfig(PlatformClient platformClient) {
         try {
             WebhookPlatformModels.SubscriberConfigList subscriberConfigList = platformClient.webhook.getSubscribersByExtensionId(
@@ -239,12 +238,10 @@ public class WebhookService {
         }
     }
 
-    // Done
     private String getWebhookUrl(String baseURL, String apiPath) {
         return baseURL + apiPath;
     }
-
-    // Done
+  
     /**
      * @param eventMap - map of user provided configuration
      * @param configType - provider type - kafka or rest
@@ -266,7 +263,6 @@ public class WebhookService {
     }
 
 
-    // Done
     private String getCriteria(WebhookProperties webhookProperties, List<String> applicationIds) {
         if (StringUtils.isNotEmpty(this.extensionProperties.getWebhook().getSubscribedSalesChannel())
                 && webhookProperties.getSubscribedSalesChannel()
@@ -276,7 +272,6 @@ public class WebhookService {
         return Criteria.ALL.getValue();
     }
 
-    // Done
     private WebhookPlatformModels.SubscriberConfigRequestV2 setSubscriberConfig(
             WebhookPlatformModels.SubscriberResponse subscriberResponse, String configType) {
         if (Objects.isNull(subscriberResponse)) {
@@ -301,7 +296,6 @@ public class WebhookService {
         return subscriberConfig;
     }
 
-    // Done
     private boolean isConfigurationUpdated(WebhookPlatformModels.SubscriberConfigRequestV2 subscriberConfig,
                                            WebhookProperties webhookProperties) {
         boolean updated = false;
@@ -337,7 +331,6 @@ public class WebhookService {
         return updated;
     }
 
-    // Done
     private boolean isEventDiff(WebhookPlatformModels.SubscriberResponse existingEvents,
                                 WebhookPlatformModels.SubscriberConfigRequestV2 newEvents) {
         Set<Integer> existingEventIds = existingEvents.getEventConfigs()
@@ -352,8 +345,7 @@ public class WebhookService {
         log.info("Unique Event IDs found  : " + uniques);
         return !uniques.isEmpty();
     }
-
-    // Done
+ 
     private WebhookPublicModels.EventConfigResponse getEventConfig(List<EventMapProperties> eventMap) {
         try {
             List<WebhookPublicModels.EventConfigBase> eventConfigs = new ArrayList<>();
@@ -384,7 +376,6 @@ public class WebhookService {
     }
 
 
-    // Done
     private List<String> validateEvents(List<EventMapProperties> eventMap,
                                         WebhookPublicModels.EventConfigResponse eventConfigResponse) {
         List<String> errorWebhooks = new ArrayList<>();
@@ -397,7 +388,6 @@ public class WebhookService {
         return errorWebhooks;
     }
 
-    // Done
     private boolean isPartOfEventConfig(WebhookPublicModels.EventConfigResponse eventConfigResponse,
                                         EventMapProperties eventSubscribed) {
         String subscribedEventName = eventSubscribed.getName()
@@ -412,8 +402,7 @@ public class WebhookService {
                                                                                                                                                                       .equals(subscribedEventType) && eventConfig.getVersion()
                                                                                                                                                                                                                  .equals(eventSubscribed.getVersion()));
     }
-
-    // Done
+ 
     public void disableSalesChannelWebhook(PlatformClient platformClient, String applicationId) {
         if (!this.isInitialized) {
             throw new FdkInvalidWebhookConfig(Fields.WEBHOOK_NOT_INITIALISED_ERROR);
@@ -469,12 +458,10 @@ public class WebhookService {
         }
     }
 
-    // Done
     private String getCriteria(List<String> applicationIds) {
         return CollectionUtils.isEmpty(applicationIds) ? Criteria.EMPTY.getValue() : Criteria.SPECIFIC.getValue();
     }
-
-    // Done
+ 
     public void enableSalesChannelWebhook(PlatformClient platformClient, String applicationId) {
         if (!this.isInitialized) {
             throw new FdkInvalidWebhookConfig(Fields.WEBHOOK_NOT_INITIALISED_ERROR);
@@ -528,7 +515,6 @@ public class WebhookService {
         }
     }
 
-    // Done
     public void processWebhook(HttpServletRequest httpServletRequest) {
         try {
             String signature = httpServletRequest.getHeader(Fields.SIGNATURE);
@@ -588,7 +574,6 @@ public class WebhookService {
         }
     }
 
-    // Done
     private void verifySignature(String headerSignature, String responseBody) {
         try {
             Mac sha256Hmac = Mac.getInstance(Fields.HMAC_SHA);
