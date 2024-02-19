@@ -2,21 +2,24 @@ package com.fynd.extension.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fynd.extension.error.*;
+import com.fynd.extension.middleware.ClientCall;
 import com.fynd.extension.middleware.EventHandler;
 import com.fynd.extension.model.Criteria;
 import com.fynd.extension.model.EventMapProperties;
 import com.fynd.extension.model.ExtensionProperties;
 import com.fynd.extension.model.WebhookProperties;
-import com.fynd.extension.model.webhookmodel.SubscriberConfigContainer;
+import com.fynd.extension.middleware.ExtensionInterceptor;
+import com.fynd.extension.model.webhookmodel.*;
+import com.sdk.common.RequestSignerInterceptor;
+import com.sdk.common.RetrofitServiceFactory;
 import com.sdk.common.model.FDKException;
 import com.sdk.common.model.FDKServerResponseError;
 import com.sdk.platform.PlatformClient;
-import com.sdk.platform.webhook.WebhookPlatformModels;
 import com.sdk.universal.PublicClient;
 import com.sdk.universal.PublicConfig;
-import com.sdk.universal.webhook.WebhookPublicModels;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.Interceptor;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -57,6 +60,17 @@ public class WebhookService {
     private Map<String, EventMapProperties> restEventMap;
     private Map<String, EventMapProperties> kafkaEventMap;
 
+    ClientCall getClientCallApiList(){
+        RetrofitServiceFactory retrofitServiceFactory = new RetrofitServiceFactory();
+        List<Interceptor> interceptorList = new ArrayList<>();
+        interceptorList.add(new ExtensionInterceptor(extensionProperties));
+        interceptorList.add(new RequestSignerInterceptor());
+        ClientCall clientCall = retrofitServiceFactory.createService(extensionProperties.getCluster(), ClientCall.class,
+                interceptorList);
+        return clientCall;
+    }
+
+    // Done
     public void syncEvents(PlatformClient platformClient, ExtensionProperties extensionProperties,
                            Boolean enableWebhooks) {
         if (!this.isInitialized) {
@@ -73,22 +87,22 @@ public class WebhookService {
         syncSubscriberConfig(subscriberResponseContainer.getKafka(), "kafka", platformClient, enableWebhooks);
     }
 
-    void syncSubscriberConfig(WebhookPlatformModels.SubscriberResponse subscriberResponse, String configType, PlatformClient platformClient, Boolean enableWebhooks) {
+    void syncSubscriberConfig(SubscriberResponse subscriberResponse, String configType, PlatformClient platformClient, Boolean enableWebhooks) {
         try {
 
-            WebhookPlatformModels.SubscriberConfigRequestV2 subscriberConfig = new WebhookPlatformModels.SubscriberConfigRequestV2();
+            SubscriberConfigRequestV2 subscriberConfig = new SubscriberConfigRequestV2();
             if (Objects.isNull(subscriberResponse) && Objects.nonNull(this.webhookProperties)) {
                 subscriberConfig.setName(this.extensionProperties.getApiKey());
                 if(configType.equals("rest")){
                     subscriberConfig.setWebhookUrl(
                             getWebhookUrl(this.extensionProperties.getBaseUrl(), this.webhookProperties.getApiPath()));
                 }
-                subscriberConfig.setStatus(WebhookPlatformModels.SubscriberStatus.active);
+                subscriberConfig.setStatus(SubscriberStatus.active);
                 subscriberConfig.setEmailId(this.webhookProperties.getNotificationEmail());
                 subscriberConfig.setEvents(getEventList(configType.equals("rest") ? this.restEventMap : this.kafkaEventMap, configType));
                 subscriberConfig.setProvider(configType);
 
-                WebhookPlatformModels.Association association = new WebhookPlatformModels.Association();
+                Association association = new Association();
                 association.setCompanyId(Integer.parseInt(platformClient.getConfig()
                                                                         .getCompanyId()));
                 association.setCriteria(getCriteria(this.webhookProperties, Collections.emptyList()));
@@ -96,15 +110,15 @@ public class WebhookService {
                 subscriberConfig.setAssociation(association);
 
                 subscriberConfig.setAuthMeta(
-                        new WebhookPlatformModels.AuthMeta(Fields.HMAC, this.extensionProperties.getApiSecret()));
+                        new AuthMeta(Fields.HMAC, this.extensionProperties.getApiSecret()));
                 if (enableWebhooks != null) {
                     if (enableWebhooks.equals(Boolean.TRUE)) {
-                        subscriberConfig.setStatus(WebhookPlatformModels.SubscriberStatus.active);
+                        subscriberConfig.setStatus(SubscriberStatus.active);
                     } else {
-                        subscriberConfig.setStatus(WebhookPlatformModels.SubscriberStatus.inactive);
+                        subscriberConfig.setStatus(SubscriberStatus.inactive);
                     }
                 }
-                platformClient.webhook.registerSubscriberToEventV2(subscriberConfig);
+                getClientCallApiList().registerSubscriberToEventV2(platformClient.getConfig().getCompanyId(), subscriberConfig).execute();
                 log.info("Webhook Config Details Registered");
             } else {
                 log.info("Webhook config on platform side for company id : " + platformClient.getConfig()
@@ -114,20 +128,20 @@ public class WebhookService {
                 subscriberConfig.setEvents(getEventList(configType.equals("rest") ? this.restEventMap : this.kafkaEventMap, configType));
                 if (enableWebhooks != null) {
                     if (enableWebhooks.equals(Boolean.TRUE)) {
-                        subscriberConfig.setStatus(WebhookPlatformModels.SubscriberStatus.active);
+                        subscriberConfig.setStatus(SubscriberStatus.active);
                     } else {
-                        subscriberConfig.setStatus(WebhookPlatformModels.SubscriberStatus.inactive);
+                        subscriberConfig.setStatus(SubscriberStatus.inactive);
                     }
                 }
                 if (isConfigurationUpdated(subscriberConfig, this.webhookProperties) || isEventDiff(
                         subscriberResponse, subscriberConfig) || subscriberResponse.getStatus()
-                        .equals(WebhookPlatformModels.SubscriberStatus.inactive)) {
-                    platformClient.webhook.updateSubscriberV2(subscriberConfig);
+                        .equals(SubscriberStatus.inactive)) {
+                    getClientCallApiList().updateSubscriberV2(platformClient.getConfig().getCompanyId(), subscriberConfig).execute();
                     log.info("Webhook Config Details updated");
                 }
             }
 
-        } catch (IOException | FDKException | FDKServerResponseError e) {
+        } catch (IOException e) {
             log.error("Exception occurred during Webhook Sync : ", e);
             throw new FdkWebhookRegistrationError("Failed to sync webhook events. Reason: " + e.getMessage());
         } catch (Exception e) {
@@ -202,7 +216,7 @@ public class WebhookService {
         }
 
         //5. Validate Webhook events
-        WebhookPublicModels.EventConfigResponse eventConfigResponse = getEventConfig(webhookProperties.getEventMap());
+        EventConfigResponse eventConfigResponse = getEventConfig(webhookProperties.getEventMap());
         List<String> errorWebhooks = validateEvents(webhookProperties.getEventMap(), eventConfigResponse);
         if (!errorWebhooks.isEmpty()) {
             throw new FdkInvalidWebhookConfig("Webhooks events errors" + errorWebhooks);
@@ -213,13 +227,12 @@ public class WebhookService {
 
     private SubscriberConfigContainer getSubscriberConfig(PlatformClient platformClient) {
         try {
-            WebhookPlatformModels.SubscriberConfigList subscriberConfigList = platformClient.webhook.getSubscribersByExtensionId(
-                    null, null, this.extensionProperties.getApiKey());
+            SubscriberConfigList subscriberConfigList = getClientCallApiList().getSubscribersByExtensionId(platformClient.getConfig().getCompanyId(), this.extensionProperties.getApiKey(), null, null).execute().body();
             SubscriberConfigContainer subscriberConfigContainer = new SubscriberConfigContainer();
 
             if (Objects.nonNull(subscriberConfigList) && CollectionUtils.isNotEmpty(subscriberConfigList.getItems())) {
 
-                for(WebhookPlatformModels.SubscriberResponse subscriberResponse : subscriberConfigList.getItems()){
+                for(SubscriberResponse subscriberResponse : subscriberConfigList.getItems()){
                     if(subscriberResponse.getProvider().equals("kafka")){
                         subscriberConfigContainer.setKafka(subscriberResponse);
                     }
@@ -245,11 +258,11 @@ public class WebhookService {
      * @param configType - provider type - kafka or rest
      * @return - returns list of event configured by user to send in register or update subscriberConfig api
      */
-    private List<WebhookPlatformModels.Events> getEventList(Map<String, EventMapProperties> eventMap, String configType){
-        List<WebhookPlatformModels.Events> eventList = new ArrayList<WebhookPlatformModels.Events>();
+    private List<Events> getEventList(Map<String, EventMapProperties> eventMap, String configType){
+        List<Events> eventList = new ArrayList<Events>();
 
         for(Map.Entry<String, EventMapProperties> event : eventMap.entrySet()){
-            WebhookPlatformModels.Events eventData = new WebhookPlatformModels.Events();
+            Events eventData = new Events();
             eventData.setSlug(event.getKey());
             if(configType.equals("kafka")){
                 eventData.setTopic(event.getValue().getTopic());
@@ -269,12 +282,12 @@ public class WebhookService {
         return Criteria.ALL.getValue();
     }
 
-    private WebhookPlatformModels.SubscriberConfigRequestV2 setSubscriberConfig(
-            WebhookPlatformModels.SubscriberResponse subscriberResponse, String configType) {
+    private SubscriberConfigRequestV2 setSubscriberConfig(
+            SubscriberResponse subscriberResponse, String configType) {
         if (Objects.isNull(subscriberResponse)) {
             throw new FdkWebhookRegistrationError("Subscriber Config Response not found");
         }
-        WebhookPlatformModels.SubscriberConfigRequestV2 subscriberConfig = new WebhookPlatformModels.SubscriberConfigRequestV2();
+        SubscriberConfigRequestV2 subscriberConfig = new SubscriberConfigRequestV2();
         subscriberConfig.setName(subscriberResponse.getName());
         subscriberConfig.setId(subscriberResponse.getId());
         if(configType.equals("rest")){
@@ -284,16 +297,15 @@ public class WebhookService {
         subscriberConfig.setAssociation(subscriberResponse.getAssociation());
         subscriberConfig.setStatus(subscriberResponse.getStatus());
         if (subscriberResponse.getStatus()
-                              .equals(WebhookPlatformModels.SubscriberStatus.inactive) || subscriberResponse.getStatus()
-                                                                                                            .equals(WebhookPlatformModels.SubscriberStatus.blocked)) {
-            subscriberConfig.setStatus(WebhookPlatformModels.SubscriberStatus.active);
+                              .equals(SubscriberStatus.inactive) || subscriberResponse.getStatus().equals(SubscriberStatus.blocked)) {
+            subscriberConfig.setStatus(SubscriberStatus.active);
         }
         subscriberConfig.setAuthMeta(subscriberResponse.getAuthMeta());
         subscriberConfig.setEmailId(subscriberResponse.getEmailId());
         return subscriberConfig;
     }
 
-    private boolean isConfigurationUpdated(WebhookPlatformModels.SubscriberConfigRequestV2 subscriberConfig,
+    private boolean isConfigurationUpdated(SubscriberConfigRequestV2 subscriberConfig,
                                            WebhookProperties webhookProperties) {
         boolean updated = false;
         this.associationCriteria = getCriteria(webhookProperties, subscriberConfig.getAssociation()
@@ -328,8 +340,8 @@ public class WebhookService {
         return updated;
     }
 
-    private boolean isEventDiff(WebhookPlatformModels.SubscriberResponse existingEvents,
-                                WebhookPlatformModels.SubscriberConfigRequestV2 newEvents) {
+    private boolean isEventDiff(SubscriberResponse existingEvents,
+                                SubscriberConfigRequestV2 newEvents) {
         Set<String> existingEventSlugs = existingEvents.getEventConfigs()
                                                         .stream()
                                                         .map(eventConfig -> {
@@ -342,7 +354,7 @@ public class WebhookService {
                                                         .collect(Collectors.toSet());
         List<String> uniques = new ArrayList<>(newEvents.getEvents()
                 .stream()
-                .map(WebhookPlatformModels.Events::getSlug)
+                .map(Events::getSlug)
                 .toList());
         if (existingEventSlugs.size() > uniques.size()) {
             return true;
@@ -352,16 +364,16 @@ public class WebhookService {
         return !uniques.isEmpty();
     }
  
-    private WebhookPublicModels.EventConfigResponse getEventConfig(List<EventMapProperties> eventMap) {
+    private EventConfigResponse getEventConfig(List<EventMapProperties> eventMap) {
         try {
-            List<WebhookPublicModels.EventConfigBase> eventConfigs = new ArrayList<>();
+            List<EventConfigBase> eventConfigs = new ArrayList<>();
             eventMap.forEach(event -> {
                 String[] eventDetails = event.getName()
                                              .split("/");
                 if (eventDetails.length != 2) {
                     throw new FdkInvalidWebhookConfig("Invalid webhook event map key. Invalid key: " + event.getName());
                 }
-                WebhookPublicModels.EventConfigBase eventConfig = new WebhookPublicModels.EventConfigBase();
+                EventConfigBase eventConfig = new EventConfigBase();
                 eventConfig.setEventCategory(event.getCategory());
                 eventConfig.setEventName(eventDetails[0]);
                 eventConfig.setEventType(eventDetails[1]);
@@ -371,9 +383,8 @@ public class WebhookService {
             PublicConfig publicConfig = new PublicConfig(extensionProperties.getApiKey(),
                                                          extensionProperties.getCluster());
             PublicClient publicClient = new PublicClient(publicConfig);
-            WebhookPublicModels.EventConfigResponse eventConfigResponse = publicClient.webhook.queryWebhookEventDetails(
-                    eventConfigs);
-            log.debug("Webhook events config received: {}", objectMapper.writeValueAsString(eventConfigResponse));
+            EventConfigResponse eventConfigResponse = getClientCallApiList().queryWebhookEventDetails(eventConfigs).execute().body();
+                    log.debug("Webhook events config received: {}", objectMapper.writeValueAsString(eventConfigResponse));
             return eventConfigResponse;
         } catch (Exception e) {
             log.error("Error in querying Webhook Event Details", e);
@@ -382,7 +393,7 @@ public class WebhookService {
     }
 
     private List<String> validateEvents(List<EventMapProperties> eventMap,
-                                        WebhookPublicModels.EventConfigResponse eventConfigResponse) {
+                                        EventConfigResponse eventConfigResponse) {
         List<String> errorWebhooks = new ArrayList<>();
         eventMap.forEach(eventSubscribed -> {
             if (!isPartOfEventConfig(eventConfigResponse, eventSubscribed)) {
@@ -393,7 +404,7 @@ public class WebhookService {
         return errorWebhooks;
     }
 
-    private boolean isPartOfEventConfig(WebhookPublicModels.EventConfigResponse eventConfigResponse,
+    private boolean isPartOfEventConfig(EventConfigResponse eventConfigResponse,
                                         EventMapProperties eventSubscribed) {
         String subscribedEventName = eventSubscribed.getName()
                                                     .split("/")[0];
@@ -421,19 +432,19 @@ public class WebhookService {
         try {
             SubscriberConfigContainer subscriberConfigContainer = getSubscriberConfig(platformClient);
 
-            Map<String, WebhookPlatformModels.SubscriberResponse> subscriberResponseMap = new HashMap<String, WebhookPlatformModels.SubscriberResponse>();
+            Map<String, SubscriberResponse> subscriberResponseMap = new HashMap<String, SubscriberResponse>();
             subscriberResponseMap.put("rest", subscriberConfigContainer.getRest());
             subscriberResponseMap.put("kafka", subscriberConfigContainer.getKafka());
 
-            for(Map.Entry<String, WebhookPlatformModels.SubscriberResponse> subscriberResponseEntry : subscriberResponseMap.entrySet()){
+            for(Map.Entry<String, SubscriberResponse> subscriberResponseEntry : subscriberResponseMap.entrySet()){
                 String configType = subscriberResponseEntry.getKey();
-                WebhookPlatformModels.SubscriberResponse subscriberResponse = subscriberResponseEntry.getValue();
+                SubscriberResponse subscriberResponse = subscriberResponseEntry.getValue();
 
-                WebhookPlatformModels.SubscriberConfigRequestV2 subscriberConfig = setSubscriberConfig(subscriberResponse, configType);
-                List<WebhookPlatformModels.Events> events = new ArrayList<WebhookPlatformModels.Events>();
+                SubscriberConfigRequestV2 subscriberConfig = setSubscriberConfig(subscriberResponse, configType);
+                List<Events> events = new ArrayList<Events>();
                 subscriberResponse.getEventConfigs()
                         .forEach((eventConfig) -> {
-                            WebhookPlatformModels.Events event = new WebhookPlatformModels.Events();
+                            Events event = new Events();
                             event.setSlug(eventConfig.getEventCategory() + "/" + eventConfig.getEventName() + "/" + eventConfig.getEventType() + "/v" + eventConfig.getVersion());
                             if(configType.equals("kafka")){
                                 event.setTopic(eventConfig.getSubscriberEventMapping().getTopic());
@@ -454,7 +465,7 @@ public class WebhookService {
                             .setCriteria(getCriteria(subscriberConfig.getAssociation()
                                     .getApplicationId()));
                 }
-                platformClient.webhook.updateSubscriberV2(subscriberConfig);
+                getClientCallApiList().updateSubscriberV2(platformClient.getConfig().getCompanyId(), subscriberConfig).execute();
             }
             log.info("Webhook disabled for Sales Channel: " + applicationId);
         } catch (Exception e) {
@@ -480,19 +491,19 @@ public class WebhookService {
         try {
             SubscriberConfigContainer subscriberConfigContainer = getSubscriberConfig(platformClient);
 
-            Map<String, WebhookPlatformModels.SubscriberResponse> subscriberResponseMap = new HashMap<String, WebhookPlatformModels.SubscriberResponse>();
+            Map<String, SubscriberResponse> subscriberResponseMap = new HashMap<String, SubscriberResponse>();
             subscriberResponseMap.put("rest", subscriberConfigContainer.getRest());
             subscriberResponseMap.put("kafka", subscriberConfigContainer.getKafka());
 
-            for(Map.Entry<String, WebhookPlatformModels.SubscriberResponse> subscriberResponseEntry : subscriberResponseMap.entrySet()){
+            for(Map.Entry<String, SubscriberResponse> subscriberResponseEntry : subscriberResponseMap.entrySet()){
                 String configType = subscriberResponseEntry.getKey();
-                WebhookPlatformModels.SubscriberResponse subscriberResponse = subscriberResponseEntry.getValue();
+                SubscriberResponse subscriberResponse = subscriberResponseEntry.getValue();
 
-                WebhookPlatformModels.SubscriberConfigRequestV2 subscriberConfig = setSubscriberConfig(subscriberResponse, configType);
-                List<WebhookPlatformModels.Events> events = new ArrayList<WebhookPlatformModels.Events>();
+                SubscriberConfigRequestV2 subscriberConfig = setSubscriberConfig(subscriberResponse, configType);
+                List<Events> events = new ArrayList<Events>();
                 subscriberResponse.getEventConfigs()
                         .forEach((eventConfig) -> {
-                            WebhookPlatformModels.Events event = new WebhookPlatformModels.Events();
+                            Events event = new Events();
                             event.setSlug(eventConfig.getEventCategory() + "/" + eventConfig.getEventName() + "/" + eventConfig.getEventType() + "/v" + eventConfig.getVersion());
                             if(configType.equals("kafka")){
                                 event.setTopic(eventConfig.getSubscriberEventMapping().getTopic());
@@ -510,7 +521,7 @@ public class WebhookService {
                             .setCriteria(getCriteria(subscriberConfig.getAssociation()
                                     .getApplicationId()));
                 }
-                platformClient.webhook.updateSubscriberV2(subscriberConfig);
+                getClientCallApiList().updateSubscriberV2(platformClient.getConfig().getCompanyId(), subscriberConfig).execute();
             }
 
             log.info("Webhook enabled for sales channel: " + applicationId);

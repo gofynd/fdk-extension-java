@@ -4,9 +4,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Getter;
 import lombok.Setter;
+
+import java.util.List;
+
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -14,12 +17,17 @@ import lombok.Setter;
 @Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class SubscriberConfigContainer {
+public class EventConfigResponse{
 
-    @JsonProperty("rest")
-    private SubscriberResponse rest ;
 
-    @JsonProperty("kafka")
-    private SubscriberResponse kafka;
+
+
+
+
+
+    @JsonProperty("event_configs")
+    private List<EventConfig> eventConfigs;
+
+
 
 }
