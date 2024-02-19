@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fynd.extension.error.*;
 import com.fynd.extension.middleware.ClientCall;
 import com.fynd.extension.middleware.EventHandler;
+import com.fynd.extension.middleware.PlatformClientCall;
 import com.fynd.extension.model.Criteria;
 import com.fynd.extension.model.EventMapProperties;
 import com.fynd.extension.model.ExtensionProperties;
@@ -12,9 +13,9 @@ import com.fynd.extension.middleware.ExtensionInterceptor;
 import com.fynd.extension.model.webhookmodel.*;
 import com.sdk.common.RequestSignerInterceptor;
 import com.sdk.common.RetrofitServiceFactory;
-import com.sdk.common.model.FDKException;
-import com.sdk.common.model.FDKServerResponseError;
+import com.sdk.platform.AccessTokenInterceptor;
 import com.sdk.platform.PlatformClient;
+import com.sdk.platform.PlatformConfig;
 import com.sdk.universal.PublicClient;
 import com.sdk.universal.PublicConfig;
 import jakarta.servlet.http.HttpServletRequest;
@@ -70,6 +71,16 @@ public class WebhookService {
         return clientCall;
     }
 
+    PlatformClientCall getPlatformClientCallApiList(PlatformConfig platformConfig){
+        RetrofitServiceFactory retrofitServiceFactory = new RetrofitServiceFactory();
+        List<Interceptor> interceptorList = new ArrayList<>();
+        interceptorList.add(new AccessTokenInterceptor(platformConfig));
+        interceptorList.add(new RequestSignerInterceptor());
+        PlatformClientCall platformClientCall = retrofitServiceFactory.createService(extensionProperties.getCluster(), PlatformClientCall.class,
+                interceptorList);
+        return platformClientCall;
+    }
+
     // Done
     public void syncEvents(PlatformClient platformClient, ExtensionProperties extensionProperties,
                            Boolean enableWebhooks) {
@@ -118,7 +129,7 @@ public class WebhookService {
                         subscriberConfig.setStatus(SubscriberStatus.inactive);
                     }
                 }
-                getClientCallApiList().registerSubscriberToEventV2(platformClient.getConfig().getCompanyId(), subscriberConfig).execute();
+                getPlatformClientCallApiList(platformClient.getConfig()).registerSubscriberToEventV2(platformClient.getConfig().getCompanyId(), subscriberConfig).execute();
                 log.info("Webhook Config Details Registered");
             } else {
                 log.info("Webhook config on platform side for company id : " + platformClient.getConfig()
@@ -136,7 +147,7 @@ public class WebhookService {
                 if (isConfigurationUpdated(subscriberConfig, this.webhookProperties) || isEventDiff(
                         subscriberResponse, subscriberConfig) || subscriberResponse.getStatus()
                         .equals(SubscriberStatus.inactive)) {
-                    getClientCallApiList().updateSubscriberV2(platformClient.getConfig().getCompanyId(), subscriberConfig).execute();
+                    getPlatformClientCallApiList(platformClient.getConfig()).updateSubscriberV2(platformClient.getConfig().getCompanyId(), subscriberConfig).execute();
                     log.info("Webhook Config Details updated");
                 }
             }
@@ -227,7 +238,7 @@ public class WebhookService {
 
     private SubscriberConfigContainer getSubscriberConfig(PlatformClient platformClient) {
         try {
-            SubscriberConfigList subscriberConfigList = getClientCallApiList().getSubscribersByExtensionId(platformClient.getConfig().getCompanyId(), this.extensionProperties.getApiKey(), null, null).execute().body();
+            SubscriberConfigList subscriberConfigList = getPlatformClientCallApiList(platformClient.getConfig()).getSubscribersByExtensionId(platformClient.getConfig().getCompanyId(), this.extensionProperties.getApiKey(), null, null).execute().body();
             SubscriberConfigContainer subscriberConfigContainer = new SubscriberConfigContainer();
 
             if (Objects.nonNull(subscriberConfigList) && CollectionUtils.isNotEmpty(subscriberConfigList.getItems())) {
@@ -465,7 +476,7 @@ public class WebhookService {
                             .setCriteria(getCriteria(subscriberConfig.getAssociation()
                                     .getApplicationId()));
                 }
-                getClientCallApiList().updateSubscriberV2(platformClient.getConfig().getCompanyId(), subscriberConfig).execute();
+                getPlatformClientCallApiList(platformClient.getConfig()).updateSubscriberV2(platformClient.getConfig().getCompanyId(), subscriberConfig).execute();
             }
             log.info("Webhook disabled for Sales Channel: " + applicationId);
         } catch (Exception e) {
@@ -521,7 +532,7 @@ public class WebhookService {
                             .setCriteria(getCriteria(subscriberConfig.getAssociation()
                                     .getApplicationId()));
                 }
-                getClientCallApiList().updateSubscriberV2(platformClient.getConfig().getCompanyId(), subscriberConfig).execute();
+                getPlatformClientCallApiList(platformClient.getConfig()).updateSubscriberV2(platformClient.getConfig().getCompanyId(), subscriberConfig).execute();
             }
 
             log.info("Webhook enabled for sales channel: " + applicationId);
