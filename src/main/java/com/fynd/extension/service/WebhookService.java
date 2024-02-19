@@ -83,7 +83,7 @@ public class WebhookService {
                     subscriberConfig.setWebhookUrl(
                             getWebhookUrl(this.extensionProperties.getBaseUrl(), this.webhookProperties.getApiPath()));
                 }
-                subscriberConfig.setStatus(WebhookPlatformModels.SubscriberStatus.active.getPriority());
+                subscriberConfig.setStatus(WebhookPlatformModels.SubscriberStatus.active);
                 subscriberConfig.setEmailId(this.webhookProperties.getNotificationEmail());
                 subscriberConfig.setEvents(getEventList(configType.equals("rest") ? this.restEventMap : this.kafkaEventMap, configType));
                 subscriberConfig.setProvider(configType);
@@ -99,9 +99,9 @@ public class WebhookService {
                         new WebhookPlatformModels.AuthMeta(Fields.HMAC, this.extensionProperties.getApiSecret()));
                 if (enableWebhooks != null) {
                     if (enableWebhooks.equals(Boolean.TRUE)) {
-                        subscriberConfig.setStatus(WebhookPlatformModels.SubscriberStatus.active.getPriority());
+                        subscriberConfig.setStatus(WebhookPlatformModels.SubscriberStatus.active);
                     } else {
-                        subscriberConfig.setStatus(WebhookPlatformModels.SubscriberStatus.inactive.getPriority());
+                        subscriberConfig.setStatus(WebhookPlatformModels.SubscriberStatus.inactive);
                     }
                 }
                 platformClient.webhook.registerSubscriberToEventV2(subscriberConfig);
@@ -114,9 +114,9 @@ public class WebhookService {
                 subscriberConfig.setEvents(getEventList(configType.equals("rest") ? this.restEventMap : this.kafkaEventMap, configType));
                 if (enableWebhooks != null) {
                     if (enableWebhooks.equals(Boolean.TRUE)) {
-                        subscriberConfig.setStatus(WebhookPlatformModels.SubscriberStatus.active.getPriority());
+                        subscriberConfig.setStatus(WebhookPlatformModels.SubscriberStatus.active);
                     } else {
-                        subscriberConfig.setStatus(WebhookPlatformModels.SubscriberStatus.inactive.getPriority());
+                        subscriberConfig.setStatus(WebhookPlatformModels.SubscriberStatus.inactive);
                     }
                 }
                 if (isConfigurationUpdated(subscriberConfig, this.webhookProperties) || isEventDiff(
@@ -282,11 +282,11 @@ public class WebhookService {
         }
         subscriberConfig.setProvider(subscriberResponse.getProvider());
         subscriberConfig.setAssociation(subscriberResponse.getAssociation());
-        subscriberConfig.setStatus(subscriberResponse.getStatus().getPriority());
+        subscriberConfig.setStatus(subscriberResponse.getStatus());
         if (subscriberResponse.getStatus()
                               .equals(WebhookPlatformModels.SubscriberStatus.inactive) || subscriberResponse.getStatus()
                                                                                                             .equals(WebhookPlatformModels.SubscriberStatus.blocked)) {
-            subscriberConfig.setStatus(WebhookPlatformModels.SubscriberStatus.active.getPriority());
+            subscriberConfig.setStatus(WebhookPlatformModels.SubscriberStatus.active);
         }
         subscriberConfig.setAuthMeta(subscriberResponse.getAuthMeta());
         subscriberConfig.setEmailId(subscriberResponse.getEmailId());
@@ -320,7 +320,7 @@ public class WebhookService {
         }
 
         this.webhookUrl = getWebhookUrl(this.extensionProperties.getBaseUrl(), this.webhookProperties.getApiPath());
-        if (!this.webhookUrl.equals(subscriberConfig.getWebhookUrl())) {
+        if (subscriberConfig.getProvider().equals("rest") && !this.webhookUrl.equals(subscriberConfig.getWebhookUrl())) {
             log.info("Webhook URL updated from : " + subscriberConfig.getWebhookUrl() + "to : " + this.webhookUrl);
             subscriberConfig.setWebhookUrl(this.webhookUrl);
             updated = true;
@@ -330,15 +330,24 @@ public class WebhookService {
 
     private boolean isEventDiff(WebhookPlatformModels.SubscriberResponse existingEvents,
                                 WebhookPlatformModels.SubscriberConfigRequestV2 newEvents) {
-        Set<Integer> existingEventIds = existingEvents.getEventConfigs()
-                                                      .stream()
-                                                      .map(WebhookPlatformModels.EventConfig::getId)
-                                                      .collect(Collectors.toSet());
-        List<Integer> uniques = new ArrayList<>(newEvents.getId());
-        if (existingEventIds.size() > uniques.size()) {
+        Set<String> existingEventSlugs = existingEvents.getEventConfigs()
+                                                        .stream()
+                                                        .map(eventConfig -> {
+                                                            String slug = eventConfig.getEventCategory() + "/" +
+                                                                            eventConfig.getEventName() + "/" +
+                                                                            eventConfig.getEventType() + "/v" +
+                                                                            eventConfig.getVersion();
+                                                            return slug;
+                                                        })
+                                                        .collect(Collectors.toSet());
+        List<String> uniques = new ArrayList<>(newEvents.getEvents()
+                .stream()
+                .map(WebhookPlatformModels.Events::getSlug)
+                .toList());
+        if (existingEventSlugs.size() > uniques.size()) {
             return true;
         }
-        uniques.removeAll(existingEventIds);
+        uniques.removeAll(existingEventSlugs);
         log.info("Unique Event IDs found  : " + uniques);
         return !uniques.isEmpty();
     }
@@ -537,6 +546,9 @@ public class WebhookService {
             String instanceName = StringUtils.EMPTY;
             for (EventMapProperties eventMap : this.extensionProperties.getWebhook()
                                                                        .getEventMap()) {
+                if(eventMap.getProvider().equals("kafka")){
+                    continue;
+                }
                 if (eventMap.getName()
                             .equals(eventName) && StringUtils.isNotEmpty(
                         eventMap.getCategory()) && eventMap.getCategory()
