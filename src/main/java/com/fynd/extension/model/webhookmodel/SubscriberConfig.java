@@ -4,34 +4,27 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.List;
 
+/*
+    Model: SubscriberConfig
+*/
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
 @Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class SubscriberConfigResponse{
-
-
-
-
+public class SubscriberConfig{
 
 
 
     @JsonProperty("id")
     private Integer id;
-
-
-
-
-    @JsonProperty("modified_by")
-    private String modifiedBy;
 
 
 
@@ -44,12 +37,6 @@ public class SubscriberConfigResponse{
 
     @JsonProperty("webhook_url")
     private String webhookUrl;
-
-
-
-
-    @JsonProperty("provider")
-    private String provider = "rest";
 
 
 
@@ -74,24 +61,6 @@ public class SubscriberConfigResponse{
 
     @JsonProperty("email_id")
     private String emailId;
-
-
-
-
-    @JsonProperty("updated_on")
-    private String updatedOn;
-
-
-
-
-    @JsonProperty("created_on")
-    private String createdOn;
-
-
-
-
-    @JsonProperty("type")
-    private String type;
 
 
 

@@ -16,8 +16,6 @@ import com.sdk.common.RetrofitServiceFactory;
 import com.sdk.platform.AccessTokenInterceptor;
 import com.sdk.platform.PlatformClient;
 import com.sdk.platform.PlatformConfig;
-import com.sdk.universal.PublicClient;
-import com.sdk.universal.PublicConfig;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Interceptor;
@@ -27,6 +25,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import retrofit2.Response;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -60,6 +59,8 @@ public class WebhookService {
 
     private Map<String, EventMapProperties> restEventMap;
     private Map<String, EventMapProperties> kafkaEventMap;
+
+    EventConfigResponse eventConfigData;
 
     ClientCall getClientCallApiList(){
         RetrofitServiceFactory retrofitServiceFactory = new RetrofitServiceFactory();
@@ -129,7 +130,7 @@ public class WebhookService {
                         subscriberConfig.setStatus(SubscriberStatus.inactive);
                     }
                 }
-                getPlatformClientCallApiList(platformClient.getConfig()).registerSubscriberToEventV2(platformClient.getConfig().getCompanyId(), subscriberConfig).execute();
+                this.registerSubscriberConfig(platformClient.getConfig(), subscriberConfig);
                 log.info("Webhook Config Details Registered");
             } else {
                 log.info("Webhook config on platform side for company id : " + platformClient.getConfig()
@@ -147,7 +148,7 @@ public class WebhookService {
                 if (isConfigurationUpdated(subscriberConfig, this.webhookProperties) || isEventDiff(
                         subscriberResponse, subscriberConfig) || subscriberResponse.getStatus()
                         .equals(SubscriberStatus.inactive)) {
-                    getPlatformClientCallApiList(platformClient.getConfig()).updateSubscriberV2(platformClient.getConfig().getCompanyId(), subscriberConfig).execute();
+                    this.updateSubscriberConfig(platformClient.getConfig(), subscriberConfig);
                     log.info("Webhook Config Details updated");
                 }
             }
@@ -227,8 +228,8 @@ public class WebhookService {
         }
 
         //5. Validate Webhook events
-        EventConfigResponse eventConfigResponse = getEventConfig(webhookProperties.getEventMap());
-        List<String> errorWebhooks = validateEvents(webhookProperties.getEventMap(), eventConfigResponse);
+        this.eventConfigData = getEventConfig(webhookProperties.getEventMap());
+        List<String> errorWebhooks = validateEvents(webhookProperties.getEventMap(), this.eventConfigData);
         if (!errorWebhooks.isEmpty()) {
             throw new FdkInvalidWebhookConfig("Webhooks events errors" + errorWebhooks);
         }
@@ -391,9 +392,6 @@ public class WebhookService {
                 eventConfig.setVersion(event.getVersion());
                 eventConfigs.add(eventConfig);
             });
-            PublicConfig publicConfig = new PublicConfig(extensionProperties.getApiKey(),
-                                                         extensionProperties.getCluster());
-            PublicClient publicClient = new PublicClient(publicConfig);
             EventConfigResponse eventConfigResponse = getClientCallApiList().queryWebhookEventDetails(eventConfigs).execute().body();
                     log.debug("Webhook events config received: {}", objectMapper.writeValueAsString(eventConfigResponse));
             return eventConfigResponse;
@@ -429,6 +427,90 @@ public class WebhookService {
                                                                                                                                                                       .equals(subscribedEventType) && eventConfig.getVersion()
                                                                                                                                                                                                                  .equals(eventSubscribed.getVersion()));
     }
+
+
+    Response<SubscriberConfigResponse> registerSubscriberConfig(PlatformConfig platformConfig, SubscriberConfigRequestV2 subscriberConfig) throws IOException {
+        Response<SubscriberConfigResponse> res;
+        res = getPlatformClientCallApiList(platformConfig).registerSubscriberToEventV2(platformConfig.getCompanyId(), subscriberConfig).execute();
+        if(!res.isSuccessful()){
+            if(res.code() == 404){
+                if(!subscriberConfig.getProvider().equals("rest")){
+                    log.debug("Webhook Subscriber Config type " + subscriberConfig.getProvider() + " is not supported with current fp version");
+                    return res;
+                }
+                res = getPlatformClientCallApiList(platformConfig).registerSubscriberToEvent(platformConfig.getCompanyId(), convertReqBodyFromV2ToV1(subscriberConfig)).execute();
+            }
+        }
+        if(!res.isSuccessful()){
+            String errorMessage = String.format("Request to %s failed with status code %d: %s",
+                res.raw().request().url(),
+                res.code(),
+                res.errorBody().string());
+            log.error(errorMessage);
+        }
+
+        return res;
+    }
+
+    Response<SubscriberConfigResponse> updateSubscriberConfig(PlatformConfig platformConfig, SubscriberConfigRequestV2 subscriberConfig) throws IOException {
+        Response<SubscriberConfigResponse> res;
+
+        res = this.getPlatformClientCallApiList(platformConfig).updateSubscriberV2(platformConfig.getCompanyId(), subscriberConfig).execute();
+        if(!res.isSuccessful()){
+            if(res.code() == 404){
+                if(!subscriberConfig.getProvider().equals("rest")){
+                    log.debug("Webhook Subscriber Config type " + subscriberConfig.getProvider() + " is not supported with current fp version");
+                    return res;
+                }
+                res = getPlatformClientCallApiList(platformConfig).updateSubscriberConfig(platformConfig.getCompanyId(), convertReqBodyFromV2ToV1(subscriberConfig)).execute();
+            }
+            
+        }
+        if(!res.isSuccessful()){
+            String errorMessage = String.format("Request to %s failed with status code %d: %s",
+                res.raw().request().url(),
+                res.code(),
+                res.errorBody().string());
+            log.error(errorMessage);
+        }
+        
+        return res;
+    }
+
+    SubscriberConfig convertReqBodyFromV2ToV1(SubscriberConfigRequestV2 subscriberConfigRequestV2){
+        SubscriberConfig subscriberConfig = new SubscriberConfig(
+                subscriberConfigRequestV2.getId(),
+                subscriberConfigRequestV2.getName(),
+                subscriberConfigRequestV2.getWebhookUrl(),
+                subscriberConfigRequestV2.getAssociation(),
+                subscriberConfigRequestV2.getCustomHeaders(),
+                subscriberConfigRequestV2.getStatus(),
+                subscriberConfigRequestV2.getEmailId(),
+                subscriberConfigRequestV2.getAuthMeta(),
+                subscriberConfigRequestV2.getEvents().stream().map(Events::getSlug).map(this::convertSlugToId).toList()
+        );
+        return subscriberConfig;
+    }
+
+    private Integer convertSlugToId(String slug) {
+        String[] parts = slug.split("/");
+        String eventCategory = parts[0];
+        String eventName = parts[1];
+        String eventType = parts[2];
+        String version = parts[3].substring(1); // Assuming the version prefix is 'v'
+    
+        return this.eventConfigData.getEventConfigs().stream()
+                .filter(eventConfig -> eventConfig.getEventCategory().equals(eventCategory)
+                        && eventConfig.getEventName().equals(eventName)
+                        && eventConfig.getEventType().equals(eventType)
+                        && eventConfig.getVersion().equals(version))
+                .findFirst()
+                .map(EventConfig::getId)
+                .orElseThrow(() -> new FdkWebhookProcessError("EventId not found for event " + eventCategory + "/" + eventName + "/" + eventType + "/v" + version + "." + "Check if event is valid."));
+    }
+    
+    
+
  
     public void disableSalesChannelWebhook(PlatformClient platformClient, String applicationId) {
         if (!this.isInitialized) {
@@ -476,7 +558,7 @@ public class WebhookService {
                             .setCriteria(getCriteria(subscriberConfig.getAssociation()
                                     .getApplicationId()));
                 }
-                getPlatformClientCallApiList(platformClient.getConfig()).updateSubscriberV2(platformClient.getConfig().getCompanyId(), subscriberConfig).execute();
+                this.updateSubscriberConfig(platformClient.getConfig(), subscriberConfig);
             }
             log.info("Webhook disabled for Sales Channel: " + applicationId);
         } catch (Exception e) {
@@ -532,7 +614,7 @@ public class WebhookService {
                             .setCriteria(getCriteria(subscriberConfig.getAssociation()
                                     .getApplicationId()));
                 }
-                getPlatformClientCallApiList(platformClient.getConfig()).updateSubscriberV2(platformClient.getConfig().getCompanyId(), subscriberConfig).execute();
+                this.updateSubscriberConfig(platformClient.getConfig(), subscriberConfig);
             }
 
             log.info("Webhook enabled for sales channel: " + applicationId);

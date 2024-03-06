@@ -43,7 +43,7 @@ public class SubscriberResponse{
 
 
     @JsonProperty("provider")
-    private String provider;
+    private String provider = "rest";
 
 
 

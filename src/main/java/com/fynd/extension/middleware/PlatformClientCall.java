@@ -1,8 +1,10 @@
 package com.fynd.extension.middleware;
 
+import com.fynd.extension.model.webhookmodel.SubscriberConfig;
 import com.fynd.extension.model.webhookmodel.SubscriberConfigList;
 import com.fynd.extension.model.webhookmodel.SubscriberConfigRequestV2;
 import com.fynd.extension.model.webhookmodel.SubscriberConfigResponse;
+
 import retrofit2.Call;
 import retrofit2.http.*;
 
@@ -15,4 +17,11 @@ public interface PlatformClientCall {
 
     @PUT("/service/platform/webhook/v2.0/company/{company_id}/subscriber/")
     Call<SubscriberConfigResponse> updateSubscriberV2(@Path("company_id") String companyId, @Body SubscriberConfigRequestV2 payload);
+
+    @POST ("/service/platform/webhook/v1.0/company/{company_id}/subscriber/")
+    Call<SubscriberConfigResponse> registerSubscriberToEvent(@Path("company_id") String companyId, @Body SubscriberConfig payload);
+
+    @PUT ("/service/platform/webhook/v1.0/company/{company_id}/subscriber/")
+    Call<SubscriberConfigResponse> updateSubscriberConfig(@Path("company_id") String companyId, @Body SubscriberConfig payload);
+    
 }
