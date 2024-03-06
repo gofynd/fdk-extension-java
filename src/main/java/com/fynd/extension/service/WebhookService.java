@@ -430,6 +430,10 @@ public class WebhookService {
 
 
     Response<SubscriberConfigResponse> registerSubscriberConfig(PlatformConfig platformConfig, SubscriberConfigRequestV2 subscriberConfig) throws IOException {
+        if(subscriberConfig.getEvents().isEmpty()){
+            subscriberConfig.setStatus(SubscriberStatus.inactive);
+        }
+        
         Response<SubscriberConfigResponse> res;
         res = getPlatformClientCallApiList(platformConfig).registerSubscriberToEventV2(platformConfig.getCompanyId(), subscriberConfig).execute();
         if(!res.isSuccessful()){
@@ -453,8 +457,11 @@ public class WebhookService {
     }
 
     Response<SubscriberConfigResponse> updateSubscriberConfig(PlatformConfig platformConfig, SubscriberConfigRequestV2 subscriberConfig) throws IOException {
+        if(subscriberConfig.getEvents().isEmpty()){
+            subscriberConfig.setStatus(SubscriberStatus.inactive);
+        }
+        
         Response<SubscriberConfigResponse> res;
-
         res = this.getPlatformClientCallApiList(platformConfig).updateSubscriberV2(platformConfig.getCompanyId(), subscriberConfig).execute();
         if(!res.isSuccessful()){
             if(res.code() == 404){
