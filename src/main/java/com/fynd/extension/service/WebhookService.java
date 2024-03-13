@@ -329,7 +329,7 @@ public class WebhookService {
                                 .setApplicationId(new ArrayList<>());
             }
             log.info("Webhook Association Criteria updated from : " + subscriberConfig.getAssociation()
-                                                                                      .getCriteria() + "to : " + this.associationCriteria);
+                                                                                      .getCriteria() + " to : " + this.associationCriteria);
             subscriberConfig.getAssociation()
                             .setCriteria(this.associationCriteria);
             updated = true;
@@ -338,14 +338,14 @@ public class WebhookService {
         if (!webhookProperties.getNotificationEmail()
                               .equals(subscriberConfig.getEmailId())) {
             log.info(
-                    "Webhook notification email updated from : " + subscriberConfig.getEmailId() + "to : " + webhookProperties.getNotificationEmail());
+                    "Webhook notification email updated from : " + subscriberConfig.getEmailId() + " to : " + webhookProperties.getNotificationEmail());
             subscriberConfig.setEmailId(webhookProperties.getNotificationEmail());
             updated = true;
         }
 
         this.webhookUrl = getWebhookUrl(this.extensionProperties.getBaseUrl(), this.webhookProperties.getApiPath());
         if (subscriberConfig.getProvider().equals("rest") && !this.webhookUrl.equals(subscriberConfig.getWebhookUrl())) {
-            log.info("Webhook URL updated from : " + subscriberConfig.getWebhookUrl() + "to : " + this.webhookUrl);
+            log.info("Webhook URL updated from : " + subscriberConfig.getWebhookUrl() + " to : " + this.webhookUrl);
             subscriberConfig.setWebhookUrl(this.webhookUrl);
             updated = true;
         }
@@ -354,6 +354,21 @@ public class WebhookService {
 
     private boolean isEventDiff(SubscriberResponse existingEvents,
                                 SubscriberConfigRequestV2 newEvents) {
+        // Check if the provider is 'kafka' and perform the topic equality check
+        if ("kafka".equals(newEvents.getProvider())) {
+            List<EventConfig> existingEventList = existingEvents.getEventConfigs();
+            for (Events event : newEvents.getEvents()) {
+                EventConfig existingEvent = existingEventList.stream()
+                        .filter(e -> event.getSlug().equals(e.getEventCategory() + "/" + e.getEventName() + "/" + e.getEventType() + "/v" + e.getVersion()))
+                        .findFirst()
+                        .orElse(null);
+                if (existingEvent != null && !event.getTopic().equals(existingEvent.getSubscriberEventMapping().getTopic())) {
+                    return true; // Topics do not match
+                }
+            }
+        }
+
+
         Set<String> existingEventSlugs = existingEvents.getEventConfigs()
                                                         .stream()
                                                         .map(eventConfig -> {
@@ -459,6 +474,7 @@ public class WebhookService {
     Response<SubscriberConfigResponse> updateSubscriberConfig(PlatformConfig platformConfig, SubscriberConfigRequestV2 subscriberConfig) throws IOException {
         if(subscriberConfig.getEvents().isEmpty()){
             subscriberConfig.setStatus(SubscriberStatus.inactive);
+            subscriberConfig.setEvents(null); // Don't send events array in request
         }
         
         Response<SubscriberConfigResponse> res;
@@ -485,6 +501,13 @@ public class WebhookService {
     }
 
     SubscriberConfig convertReqBodyFromV2ToV1(SubscriberConfigRequestV2 subscriberConfigRequestV2){
+        List<Integer> eventIds = Optional.ofNullable(subscriberConfigRequestV2.getEvents())
+                                    .orElse(Collections.emptyList())
+                                    .stream()
+                                    .map(Events::getSlug)
+                                    .map(this::convertSlugToId)
+                                    .collect(Collectors.toList());
+
         SubscriberConfig subscriberConfig = new SubscriberConfig(
                 subscriberConfigRequestV2.getId(),
                 subscriberConfigRequestV2.getName(),
@@ -494,7 +517,7 @@ public class WebhookService {
                 subscriberConfigRequestV2.getStatus(),
                 subscriberConfigRequestV2.getEmailId(),
                 subscriberConfigRequestV2.getAuthMeta(),
-                subscriberConfigRequestV2.getEvents().stream().map(Events::getSlug).map(this::convertSlugToId).toList()
+                eventIds
         );
         return subscriberConfig;
     }
