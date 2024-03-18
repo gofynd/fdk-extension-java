@@ -32,6 +32,7 @@ public class RetryInterceptor implements Interceptor {
                     return response;
                 }
             } catch (IOException e) {
+                System.err.println("An error occurred: " + e.getMessage());
                 if (tryCount == maxRetries - 1) {
                     throw e; // Stop retrying after reaching max retries
                 }
