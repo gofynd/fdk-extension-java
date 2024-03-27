@@ -1,9 +1,11 @@
 package com.fynd.extension.middleware;
 
 import java.io.IOException;
+import lombok.extern.slf4j.Slf4j;
 import okhttp3.Interceptor;
 import okhttp3.Response;
 
+@Slf4j
 public class RetryInterceptor implements Interceptor {
 
     private int maxRetries = Integer.MAX_VALUE;
@@ -32,12 +34,12 @@ public class RetryInterceptor implements Interceptor {
                     return response;
                 }
             } catch (IOException e) {
-                System.err.println("An error occurred: " + e.getMessage());
+                log.error("An error occurred: " + e.getMessage());
                 if (tryCount == maxRetries - 1) {
                     throw e; // Stop retrying after reaching max retries
                 }
                 long time = calculateRetryTime(tryCount + 1);
-                System.out.println("RetryInterceptor " + "Retrying request after " + time + "ms. Attempt: " + (tryCount + 1));
+                log.info("RetryInterceptor " + "Retrying request after " + time + "ms. Attempt: " + (tryCount + 1));
                 try {
                     Thread.sleep(time);
                 } catch (InterruptedException interruptedEx) {
