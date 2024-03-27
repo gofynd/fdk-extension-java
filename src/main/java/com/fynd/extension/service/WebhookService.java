@@ -5,6 +5,7 @@ import com.fynd.extension.error.*;
 import com.fynd.extension.middleware.ClientCall;
 import com.fynd.extension.middleware.EventHandler;
 import com.fynd.extension.middleware.PlatformClientCall;
+import com.fynd.extension.middleware.RetryInterceptor;
 import com.fynd.extension.model.Criteria;
 import com.fynd.extension.model.EventMapProperties;
 import com.fynd.extension.model.ExtensionProperties;
@@ -67,6 +68,7 @@ public class WebhookService {
         List<Interceptor> interceptorList = new ArrayList<>();
         interceptorList.add(new ExtensionInterceptor(extensionProperties));
         interceptorList.add(new RequestSignerInterceptor());
+        interceptorList.add(new RetryInterceptor());
         ClientCall clientCall = retrofitServiceFactory.createService(extensionProperties.getCluster(), ClientCall.class,
                 interceptorList);
         return clientCall;

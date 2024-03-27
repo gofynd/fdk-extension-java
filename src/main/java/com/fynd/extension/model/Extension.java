@@ -6,6 +6,7 @@ import com.fynd.extension.middleware.AccessMode;
 import com.fynd.extension.middleware.ClientCall;
 import com.fynd.extension.middleware.ExtensionInterceptor;
 import com.fynd.extension.middleware.FdkConstants;
+import com.fynd.extension.middleware.RetryInterceptor;
 import com.fynd.extension.service.WebhookService;
 import com.fynd.extension.session.Session;
 import com.fynd.extension.session.SessionStorage;
@@ -146,6 +147,7 @@ public class Extension {
         List<Interceptor> interceptorList = new ArrayList<>();
         interceptorList.add(new ExtensionInterceptor(extensionProperties));
         interceptorList.add(new RequestSignerInterceptor());
+        interceptorList.add(new RetryInterceptor());
         ClientCall clientCall = retrofitServiceFactory.createService(extensionProperties.getCluster(), ClientCall.class,
                                                                      interceptorList);
         return clientCall.getExtensionDetails(extensionProperties.getApiKey())
