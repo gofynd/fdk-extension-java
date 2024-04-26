@@ -10,6 +10,7 @@ public class RedisStorage extends BaseStorage {
     private JedisPool jedisPool;
     private JedisCluster jedisCluster;
     private String prefixKey;
+    private JedisSentinelPool jedisSentinelPool;
 
     public RedisStorage(JedisPool jedisPool, String prefixKey) {
         super(prefixKey);
@@ -23,6 +24,13 @@ public class RedisStorage extends BaseStorage {
         this.jedisCluster = jedisCluster;
         this.prefixKey = prefixKey;
         this.isClusterMode = true;
+    }
+
+    public RedisStorage(JedisSentinelPool jedisSentinelPool, String prefixKey) {
+        super(prefixKey);
+        this.jedisSentinelPool = jedisSentinelPool;
+        this.prefixKey = prefixKey;
+        this.isClusterMode = false; // Sentinel doesn't use clustering
     }
 
     @Override
