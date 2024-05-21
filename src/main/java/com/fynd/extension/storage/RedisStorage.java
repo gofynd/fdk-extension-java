@@ -10,6 +10,7 @@ public class RedisStorage extends BaseStorage {
     private JedisPool jedisPool;
     private JedisCluster jedisCluster;
     private String prefixKey;
+    private JedisSentinelPool jedisSentinelPool;
 
     public RedisStorage(JedisPool jedisPool, String prefixKey) {
         super(prefixKey);
@@ -25,11 +26,22 @@ public class RedisStorage extends BaseStorage {
         this.isClusterMode = true;
     }
 
+    public RedisStorage(JedisSentinelPool jedisSentinelPool, String prefixKey) {
+        super(prefixKey);
+        this.jedisSentinelPool = jedisSentinelPool;
+        this.prefixKey = prefixKey;
+        this.isClusterMode = false; // Sentinel doesn't use clustering
+    }
+
     @Override
     public String get(String key) {
         if (isClusterMode) {
             return jedisCluster.get(super.prefixKey + key);
-        } else {
+        } else if (jedisSentinelPool != null) {
+            try (Jedis jedis = jedisSentinelPool.getResource()) {
+                return jedis.get(super.prefixKey + key);
+            }
+        }else {
             try (Jedis jedis = jedisPool.getResource()) {
                 return jedis.get(super.prefixKey + key);
             }
@@ -40,7 +52,11 @@ public class RedisStorage extends BaseStorage {
     public String set(String key, String value) {
         if (isClusterMode) {
             return jedisCluster.set(super.prefixKey + key, value);
-        } else {
+        } else if (jedisSentinelPool != null) {
+            try (Jedis jedis = jedisSentinelPool.getResource()) {
+                return jedis.set(super.prefixKey + key, value);
+            }
+        }else {
             try (Jedis jedis = jedisPool.getResource()) {
                 return jedis.set(super.prefixKey + key, value);
             }
@@ -51,7 +67,11 @@ public class RedisStorage extends BaseStorage {
     public Long del(String key) {
         if (isClusterMode) {
             return jedisCluster.del(super.prefixKey + key);
-        } else {
+        } else if (jedisSentinelPool != null) {
+            try (Jedis jedis = jedisSentinelPool.getResource()) {
+                return jedis.del(super.prefixKey + key);
+            }
+        }else {
             try (Jedis jedis = jedisPool.getResource()) {
                 return jedis.del(super.prefixKey + key);
             }
@@ -62,7 +82,11 @@ public class RedisStorage extends BaseStorage {
     public String setex(String key, int ttl, String value) {
         if (isClusterMode) {
             return jedisCluster.setex(super.prefixKey + key, ttl, value);
-        } else {
+        } else if (jedisSentinelPool != null) {
+            try (Jedis jedis = jedisSentinelPool.getResource()) {
+                return jedis.setex(super.prefixKey + key, ttl, value);
+            }
+        }else {
             try (Jedis jedis = jedisPool.getResource()) {
                 return jedis.setex(super.prefixKey + key, ttl, value);
             }
@@ -73,7 +97,11 @@ public class RedisStorage extends BaseStorage {
     public String hget(String key, String hashKey) {
         if (isClusterMode) {
             return jedisCluster.hget(super.prefixKey + key, hashKey);
-        } else {
+        } else if (jedisSentinelPool != null) {
+            try (Jedis jedis = jedisSentinelPool.getResource()) {
+                return jedis.hget(super.prefixKey + key, hashKey);
+            }
+        }else {
             try (Jedis jedis = jedisPool.getResource()) {
                 return jedis.hget(super.prefixKey + key, hashKey);
             }
@@ -84,7 +112,11 @@ public class RedisStorage extends BaseStorage {
     public Long hset(String key, String hashKey, String value) {
         if (isClusterMode) {
             return jedisCluster.hset(super.prefixKey + key, hashKey, value);
-        } else {
+        } else if (jedisSentinelPool != null) {
+            try (Jedis jedis = jedisSentinelPool.getResource()) {
+                return jedis.hset(super.prefixKey + key, hashKey, value);
+            }
+        }else {
             try (Jedis jedis = jedisPool.getResource()) {
                 return jedis.hset(super.prefixKey + key, hashKey, value);
             }
@@ -95,7 +127,11 @@ public class RedisStorage extends BaseStorage {
     public Map<String, Object> hgetall(String key) {
         if (isClusterMode) {
             return (Map<String, Object>) (Map) jedisCluster.hgetAll(super.prefixKey + key);
-        } else {
+        } else if (jedisSentinelPool != null) {
+            try (Jedis jedis = jedisSentinelPool.getResource()) {
+                return (Map<String, Object>) (Map) jedis.hgetAll(super.prefixKey + key);
+            }
+        }else {
             try (Jedis jedis = jedisPool.getResource()) {
                 return (Map<String, Object>) (Map) jedis.hgetAll(super.prefixKey + key);
             }
