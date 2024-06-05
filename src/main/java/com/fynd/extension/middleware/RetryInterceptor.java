@@ -44,7 +44,7 @@ public class RetryInterceptor implements Interceptor {
                     Thread.sleep(time);
                 } catch (InterruptedException interruptedEx) {
                     // Handle the interruption here (optional)
-                    System.out.println("RetryInterceptor Thread interrupted during retry " + interruptedEx);
+                    log.error("RetryInterceptor Thread interrupted during retry " + interruptedEx.getMessage());
                     throw new IOException("Thread interrupted during retry", interruptedEx); // Re-throw as IOException
                 }
 
