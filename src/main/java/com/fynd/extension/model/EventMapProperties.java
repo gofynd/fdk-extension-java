@@ -15,4 +15,8 @@ public class EventMapProperties {
 
     private String version;
 
+    private String provider;
+
+    private String topic;
+
 }
