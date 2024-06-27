@@ -106,6 +106,9 @@ public class WebhookService {
 
             SubscriberConfigRequestV2 subscriberConfig = new SubscriberConfigRequestV2();
             if (Objects.isNull(subscriberResponse) && Objects.nonNull(this.webhookProperties)) {
+                if((configType.equals("rest") && this.restEventMap.isEmpty()) || (configType.equals("kafka") && this.kafkaEventMap.isEmpty())){
+                    return;
+                }
                 subscriberConfig.setName(this.extensionProperties.getApiKey());
                 if(configType.equals("rest")){
                     subscriberConfig.setWebhookUrl(
@@ -448,7 +451,7 @@ public class WebhookService {
 
     Response<SubscriberConfigResponse> registerSubscriberConfig(PlatformConfig platformConfig, SubscriberConfigRequestV2 subscriberConfig) throws IOException {
         if(subscriberConfig.getEvents().isEmpty()){
-            subscriberConfig.setStatus(SubscriberStatus.inactive);
+            return null;
         }
         
         Response<SubscriberConfigResponse> res;
