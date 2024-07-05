@@ -561,8 +561,12 @@ public class WebhookService {
             SubscriberConfigContainer subscriberConfigContainer = getSubscriberConfig(platformClient);
 
             Map<String, SubscriberResponse> subscriberResponseMap = new HashMap<String, SubscriberResponse>();
-            subscriberResponseMap.put("rest", subscriberConfigContainer.getRest());
-            subscriberResponseMap.put("kafka", subscriberConfigContainer.getKafka());
+            if(subscriberConfigContainer.getRest() != null){
+                subscriberResponseMap.put("rest", subscriberConfigContainer.getRest());
+            }
+            if(subscriberConfigContainer.getKafka() != null){
+                subscriberResponseMap.put("kafka", subscriberConfigContainer.getKafka());
+            }
 
             for(Map.Entry<String, SubscriberResponse> subscriberResponseEntry : subscriberResponseMap.entrySet()){
                 String configType = subscriberResponseEntry.getKey();
@@ -620,8 +624,12 @@ public class WebhookService {
             SubscriberConfigContainer subscriberConfigContainer = getSubscriberConfig(platformClient);
 
             Map<String, SubscriberResponse> subscriberResponseMap = new HashMap<String, SubscriberResponse>();
-            subscriberResponseMap.put("rest", subscriberConfigContainer.getRest());
-            subscriberResponseMap.put("kafka", subscriberConfigContainer.getKafka());
+            if(subscriberConfigContainer.getRest() != null){
+                subscriberResponseMap.put("rest", subscriberConfigContainer.getRest());
+            }
+            if(subscriberConfigContainer.getKafka() != null){
+                subscriberResponseMap.put("kafka", subscriberConfigContainer.getKafka());
+            }
 
             for(Map.Entry<String, SubscriberResponse> subscriberResponseEntry : subscriberResponseMap.entrySet()){
                 String configType = subscriberResponseEntry.getKey();
