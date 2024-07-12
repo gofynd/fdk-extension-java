@@ -106,6 +106,9 @@ public class WebhookService {
 
             SubscriberConfigRequestV2 subscriberConfig = new SubscriberConfigRequestV2();
             if (Objects.isNull(subscriberResponse) && Objects.nonNull(this.webhookProperties)) {
+                if((configType.equals("rest") && this.restEventMap.isEmpty()) || (configType.equals("kafka") && this.kafkaEventMap.isEmpty())){
+                    return;
+                }
                 subscriberConfig.setName(this.extensionProperties.getApiKey());
                 if(configType.equals("rest")){
                     subscriberConfig.setWebhookUrl(
@@ -448,7 +451,7 @@ public class WebhookService {
 
     Response<SubscriberConfigResponse> registerSubscriberConfig(PlatformConfig platformConfig, SubscriberConfigRequestV2 subscriberConfig) throws IOException {
         if(subscriberConfig.getEvents().isEmpty()){
-            subscriberConfig.setStatus(SubscriberStatus.inactive);
+            return null;
         }
         
         Response<SubscriberConfigResponse> res;
@@ -558,8 +561,12 @@ public class WebhookService {
             SubscriberConfigContainer subscriberConfigContainer = getSubscriberConfig(platformClient);
 
             Map<String, SubscriberResponse> subscriberResponseMap = new HashMap<String, SubscriberResponse>();
-            subscriberResponseMap.put("rest", subscriberConfigContainer.getRest());
-            subscriberResponseMap.put("kafka", subscriberConfigContainer.getKafka());
+            if(subscriberConfigContainer.getRest() != null){
+                subscriberResponseMap.put("rest", subscriberConfigContainer.getRest());
+            }
+            if(subscriberConfigContainer.getKafka() != null){
+                subscriberResponseMap.put("kafka", subscriberConfigContainer.getKafka());
+            }
 
             for(Map.Entry<String, SubscriberResponse> subscriberResponseEntry : subscriberResponseMap.entrySet()){
                 String configType = subscriberResponseEntry.getKey();
@@ -617,8 +624,12 @@ public class WebhookService {
             SubscriberConfigContainer subscriberConfigContainer = getSubscriberConfig(platformClient);
 
             Map<String, SubscriberResponse> subscriberResponseMap = new HashMap<String, SubscriberResponse>();
-            subscriberResponseMap.put("rest", subscriberConfigContainer.getRest());
-            subscriberResponseMap.put("kafka", subscriberConfigContainer.getKafka());
+            if(subscriberConfigContainer.getRest() != null){
+                subscriberResponseMap.put("rest", subscriberConfigContainer.getRest());
+            }
+            if(subscriberConfigContainer.getKafka() != null){
+                subscriberResponseMap.put("kafka", subscriberConfigContainer.getKafka());
+            }
 
             for(Map.Entry<String, SubscriberResponse> subscriberResponseEntry : subscriberResponseMap.entrySet()){
                 String configType = subscriberResponseEntry.getKey();
