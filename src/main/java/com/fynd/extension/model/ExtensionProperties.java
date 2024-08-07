@@ -28,6 +28,9 @@ public class ExtensionProperties {
 
     private WebhookProperties webhook;
 
+    // Default cluster value
+    private static final String DEFAULT_CLUSTER = "https://api.fynd.com";
+
     public String getBaseUrl() {
         return baseUrl;
     }
@@ -51,4 +54,12 @@ public class ExtensionProperties {
    public void setScopes(List<String> scopes) {
         this.scopes = Optional.ofNullable(scopes).orElse(null);
    }
+
+    public String getCluster() {
+        return Optional.ofNullable(cluster).orElse(DEFAULT_CLUSTER);
+    }
+
+    public void setCluster(String cluster) {
+        this.cluster = Optional.ofNullable(cluster).orElse(DEFAULT_CLUSTER);
+    }
 }
