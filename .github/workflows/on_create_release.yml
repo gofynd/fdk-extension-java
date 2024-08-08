@@ -1,0 +1,16 @@
+on:
+  release:
+    types: [created]
+
+jobs:
+
+  trigger-jitpack-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v3
+
+      - name: trigger build on jitpack
+        run: |
+          curl --request GET "https://jitpack.io/api/builds/com.github.gofynd/fdk-extension-java/${{ github.event.release.tag_name }}"
