@@ -305,49 +305,51 @@ After webhook config is passed to initialize whenever extension is launched to a
 Other way to update webhook config manually for a company is to call `syncEvents` function of webhookRegistry.
 
 #### How to create custom storage class?
-Custom storage classes expand data storage options beyond default choices like Redis and in-memory storage. You would required to create a custom storage class by extending the base storage class provided by fdk extension java library and implementing required methods as per your chosen database.
+Custom storage classes expand data storage options beyond default choices like Redis and in-memory storage. You would required to create a custom storage class by implementing the base storage interface provided by fdk extension java library and implementing required methods as per your chosen database.
 
 ```java
 import com.fynd.extension.storage.BaseStorage;
-public class MyCustomStorage extends BaseStorage {
-    private StorgeClient storgeClient;
+public class MyCustomStorage implements BaseStorage {
+    private StorageClient storageClient;
     // StorgeClient is connection variable to your storage.
-    public MyCustomStorage(StorgeClient storgeClient, String prefixKey) {
+    public MyCustomStorage(StorageClient storageClient, String prefixKey) {
         super(prefixKey);
-        this.storgeClient = storgeClient;
+        this.storageClient = storageClient;
     }
 
     @Override
     public String get(String key) {
-        try (StorgeClient storgeClient = storgeClient.getResource()) {
-            return storgeClient.get(super.prefixKey + key);
-        }
+        // Implementation of a get method
     }
     
-    //  All of the below methods need to be implemented as per your chosen databse
-
+    @Override
     public String set(String key, String value) {
         // Implementation of a set method
     }
-
+    
+    @Override
     public Object del(String key) {
-        // Implementation of a del method
+        // Implementation of a delete method
     }
-
+    
+    @Override
     public String setex(String key, int ttl, String value) {
-        // Implementation of a setex method
+        // Implementation of a set expiry method
     }
 
+    @Override
     public String hget(String key, String hashKey) {
-        // Implementation of a hget method
+        // Implementation of a hash-get method
     }
 
+    @Override
     public Object hset(String key, String hashKey, String value) {
-        // Implementation of a hset method       
+        // Implementation of a hash-set method       
     }
 
+    @Override
     public Map<String, Object> hgetall(String key) {
-        // Implementation of a hgetall method
+        // Implementation of a hash getall method
     }
 }
 
