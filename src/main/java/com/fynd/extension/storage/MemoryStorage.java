@@ -1,18 +1,17 @@
 package com.fynd.extension.storage;
 
-import org.springframework.util.StringUtils;
-
 import java.util.HashMap;
 import java.util.Map;
 
-public class MemoryStorage implements BaseStorage {
+public class MemoryStorage extends BaseStorage {
 
     private String prefixKey;
 
     private Map<String, Object> data = new HashMap<>();
 
     public MemoryStorage(String prefixKey) {
-        this.prefixKey = StringUtils.hasText(prefixKey) ? prefixKey + ":" : "";
+        super(prefixKey);
+
     }
 
     @Override
