@@ -10,7 +10,7 @@ import com.fynd.extension.middleware.RetryInterceptor;
 import com.fynd.extension.service.WebhookService;
 import com.fynd.extension.session.Session;
 import com.fynd.extension.session.SessionStorage;
-import com.fynd.extension.storage.Storage;
+import com.fynd.extension.storage.BaseStorage;
 import com.sdk.common.RequestSignerInterceptor;
 import com.sdk.common.RetrofitServiceFactory;
 import com.sdk.common.model.AccessTokenDto;
@@ -46,7 +46,7 @@ public class Extension {
 
     ExtensionProperties extensionProperties;
 
-    Storage storage;
+    BaseStorage storage;
 
     ExtensionCallback callbacks;
 
@@ -57,7 +57,7 @@ public class Extension {
 
     boolean isInitialized;
 
-    public Extension initialize(ExtensionProperties extensionProperties, Storage storage,
+    public Extension initialize(ExtensionProperties extensionProperties, BaseStorage storage,
                                 ExtensionCallback callbacks) {
         Extension extension = new Extension();
         extension.setInitialized(false);

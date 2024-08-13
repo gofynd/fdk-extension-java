@@ -5,7 +5,7 @@ import org.springframework.util.StringUtils;
 import java.util.HashMap;
 import java.util.Map;
 
-public class MemoryStorage implements Storage {
+public class MemoryStorage implements BaseStorage {
 
     private String prefixKey;
 

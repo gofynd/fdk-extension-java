@@ -2,7 +2,7 @@ package com.fynd.extension.storage;
 
 import java.util.Map;
 
-public interface Storage {
+public interface BaseStorage {
     String get(String key);
     String set(String key, String value);
     Object del(String key);

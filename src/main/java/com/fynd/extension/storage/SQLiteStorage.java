@@ -9,7 +9,7 @@ import java.sql.ResultSet;
 import java.util.Map;
 import org.springframework.util.StringUtils;
 
-public class SQLiteStorage implements Storage {
+public class SQLiteStorage implements BaseStorage {
 
     private final String dbUrl = "jdbc:sqlite:session_storage.db";
     private final String prefixKey;

@@ -5,7 +5,7 @@ import org.springframework.util.StringUtils;
 import redis.clients.jedis.*;
 import java.util.Map;
 
-public class RedisStorage implements Storage {
+public class RedisStorage implements BaseStorage {
 
     private boolean isClusterMode;
     private JedisPool jedisPool;
