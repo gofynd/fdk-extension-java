@@ -1,11 +1,10 @@
 package com.fynd.extension.storage;
 
 
-import org.springframework.util.StringUtils;
 import redis.clients.jedis.*;
 import java.util.Map;
 
-public class RedisStorage implements BaseStorage {
+public class RedisStorage extends BaseStorage {
 
     private boolean isClusterMode;
     private JedisPool jedisPool;
@@ -14,131 +13,127 @@ public class RedisStorage implements BaseStorage {
     private JedisSentinelPool jedisSentinelPool;
 
     public RedisStorage(JedisPool jedisPool, String prefixKey) {
-        this.prefixKey = StringUtils.hasText(prefixKey) ? prefixKey + ":" : "";
+        super(prefixKey);
         this.jedisPool = jedisPool;
+        this.prefixKey = prefixKey;
         this.isClusterMode = false;
     }
 
     public RedisStorage(JedisCluster jedisCluster, String prefixKey) {
-        this.prefixKey = StringUtils.hasText(prefixKey) ? prefixKey + ":" : "";
+        super(prefixKey);
         this.jedisCluster = jedisCluster;
+        this.prefixKey = prefixKey;
         this.isClusterMode = true;
     }
 
     public RedisStorage(JedisSentinelPool jedisSentinelPool, String prefixKey) {
-        this.prefixKey = StringUtils.hasText(prefixKey) ? prefixKey + ":" : "";
+        super(prefixKey);
         this.jedisSentinelPool = jedisSentinelPool;
-        this.isClusterMode = false;
+        this.prefixKey = prefixKey;
+        this.isClusterMode = false; // Sentinel doesn't use clustering
     }
 
     @Override
     public String get(String key) {
-        String fullKey = prefixKey + key;
         if (isClusterMode) {
-            return jedisCluster.get(fullKey);
+            return jedisCluster.get(super.prefixKey + key);
         } else if (jedisSentinelPool != null) {
             try (Jedis jedis = jedisSentinelPool.getResource()) {
-                return jedis.get(fullKey);
+                return jedis.get(super.prefixKey + key);
             }
         }else {
             try (Jedis jedis = jedisPool.getResource()) {
-                return jedis.get(fullKey);
+                return jedis.get(super.prefixKey + key);
             }
         }
     }
 
     @Override
     public String set(String key, String value) {
-        String fullKey = prefixKey + key;
         if (isClusterMode) {
-            return jedisCluster.set(fullKey, value);
+            return jedisCluster.set(super.prefixKey + key, value);
         } else if (jedisSentinelPool != null) {
             try (Jedis jedis = jedisSentinelPool.getResource()) {
-                return jedis.set(fullKey, value);
+                return jedis.set(super.prefixKey + key, value);
             }
         }else {
             try (Jedis jedis = jedisPool.getResource()) {
-                return jedis.set(fullKey, value);
+                return jedis.set(super.prefixKey + key, value);
             }
         }
     }
 
     @Override
     public Long del(String key) {
-        String fullKey = prefixKey + key;
         if (isClusterMode) {
-            return jedisCluster.del(fullKey);
+            return jedisCluster.del(super.prefixKey + key);
         } else if (jedisSentinelPool != null) {
             try (Jedis jedis = jedisSentinelPool.getResource()) {
-                return jedis.del(fullKey);
+                return jedis.del(super.prefixKey + key);
             }
         }else {
             try (Jedis jedis = jedisPool.getResource()) {
-                return jedis.del(fullKey);
+                return jedis.del(super.prefixKey + key);
             }
         }
     }
 
     @Override
     public String setex(String key, int ttl, String value) {
-        String fullKey = prefixKey + key;
         if (isClusterMode) {
-            return jedisCluster.setex(fullKey, ttl, value);
+            return jedisCluster.setex(super.prefixKey + key, ttl, value);
         } else if (jedisSentinelPool != null) {
             try (Jedis jedis = jedisSentinelPool.getResource()) {
-                return jedis.setex(fullKey, ttl, value);
+                return jedis.setex(super.prefixKey + key, ttl, value);
             }
         }else {
             try (Jedis jedis = jedisPool.getResource()) {
-                return jedis.setex(fullKey, ttl, value);
+                return jedis.setex(super.prefixKey + key, ttl, value);
             }
         }
     }
 
     @Override
     public String hget(String key, String hashKey) {
-        String fullKey = prefixKey + key;
         if (isClusterMode) {
-            return jedisCluster.hget(fullKey, hashKey);
+            return jedisCluster.hget(super.prefixKey + key, hashKey);
         } else if (jedisSentinelPool != null) {
             try (Jedis jedis = jedisSentinelPool.getResource()) {
-                return jedis.hget(fullKey, hashKey);
+                return jedis.hget(super.prefixKey + key, hashKey);
             }
         }else {
             try (Jedis jedis = jedisPool.getResource()) {
-                return jedis.hget(fullKey, hashKey);
+                return jedis.hget(super.prefixKey + key, hashKey);
             }
         }
     }
 
     @Override
     public Long hset(String key, String hashKey, String value) {
-        String fullKey = prefixKey + key;
         if (isClusterMode) {
-            return jedisCluster.hset(fullKey, hashKey, value);
+            return jedisCluster.hset(super.prefixKey + key, hashKey, value);
         } else if (jedisSentinelPool != null) {
             try (Jedis jedis = jedisSentinelPool.getResource()) {
-                return jedis.hset(fullKey, hashKey, value);
+                return jedis.hset(super.prefixKey + key, hashKey, value);
             }
         }else {
             try (Jedis jedis = jedisPool.getResource()) {
-                return jedis.hset(fullKey, hashKey, value);
+                return jedis.hset(super.prefixKey + key, hashKey, value);
             }
         }
     }
 
     @Override
     public Map<String, Object> hgetall(String key) {
-        String fullKey = prefixKey + key;
         if (isClusterMode) {
-            return (Map<String, Object>) (Map) jedisCluster.hgetAll(fullKey);
+            return (Map<String, Object>) (Map) jedisCluster.hgetAll(super.prefixKey + key);
         } else if (jedisSentinelPool != null) {
             try (Jedis jedis = jedisSentinelPool.getResource()) {
-                return (Map<String, Object>) (Map) jedis.hgetAll(fullKey);
+                return (Map<String, Object>) (Map) jedis.hgetAll(super.prefixKey + key);
             }
         }else {
             try (Jedis jedis = jedisPool.getResource()) {
-                return (Map<String, Object>) (Map) jedis.hgetAll(fullKey);
+                return (Map<String, Object>) (Map) jedis.hgetAll(super.prefixKey + key);
             }
         }
     }

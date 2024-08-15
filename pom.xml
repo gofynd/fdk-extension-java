@@ -38,12 +38,6 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.xerial</groupId>
-			<artifactId>sqlite-jdbc</artifactId>
-			<version>3.34.0</version>
-		</dependency>
-
-		<dependency>
 			<groupId>com.fasterxml.uuid</groupId>
 			<artifactId>java-uuid-generator</artifactId>
 			<version>4.0</version>
@@ -72,6 +66,12 @@
 			<groupId>com.github.gofynd</groupId>
 			<artifactId>fdk-client-java</artifactId>
 			<version>${fdk-client.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.xerial</groupId>
+			<artifactId>sqlite-jdbc</artifactId>
+			<version>3.34.0</version>
 		</dependency>
 
 

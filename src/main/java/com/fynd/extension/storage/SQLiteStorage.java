@@ -7,17 +7,18 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.ResultSet;
 import java.util.Map;
-import org.springframework.util.StringUtils;
 
-public class SQLiteStorage implements BaseStorage {
+public class SQLiteStorage extends BaseStorage {
 
-    private final String dbUrl = "jdbc:sqlite:session_storage.db";
+    private final String dbUrl;
     private final String prefixKey;
     private Thread ttlCheckerThread;
 
-    public SQLiteStorage(String prefixKey) throws ClassNotFoundException {
-        this.prefixKey = StringUtils.hasText(prefixKey) ? prefixKey + ":" : "";
+    public SQLiteStorage(String dbUrl, String prefixKey) throws ClassNotFoundException {
+        super(prefixKey);
         Class.forName("org.sqlite.JDBC");
+        this.prefixKey = prefixKey;
+        this.dbUrl = dbUrl;
         initDatabase();
         setupTTLChecker();
     }
@@ -58,7 +59,7 @@ public class SQLiteStorage implements BaseStorage {
         String query = "SELECT value FROM storage WHERE key = ?";
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement pstmt = conn.prepareStatement(query)) {
-            pstmt.setString(1, prefixKey + key);
+            pstmt.setString(1, super.prefixKey + key);
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
                 return rs.getString("value");
@@ -74,7 +75,7 @@ public class SQLiteStorage implements BaseStorage {
         String query = "INSERT INTO storage (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value";
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement pstmt = conn.prepareStatement(query)) {
-            pstmt.setString(1, prefixKey + key);
+            pstmt.setString(1, super.prefixKey + key);
             pstmt.setString(2, value);
             pstmt.executeUpdate();
             return value;
@@ -88,7 +89,7 @@ public class SQLiteStorage implements BaseStorage {
         String query = "DELETE FROM storage WHERE key = ?";
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement pstmt = conn.prepareStatement(query)) {
-            pstmt.setString(1, prefixKey + key);
+            pstmt.setString(1, super.prefixKey + key);
             int affectedRows = pstmt.executeUpdate();
             return (long) affectedRows;
         } catch (SQLException e) {
@@ -102,7 +103,7 @@ public class SQLiteStorage implements BaseStorage {
         long expiresAt = System.currentTimeMillis() / 1000 + ttl;
         try (Connection conn = DriverManager.getConnection(dbUrl);
              PreparedStatement pstmt = conn.prepareStatement(query)) {
-            pstmt.setString(1, prefixKey + key);
+            pstmt.setString(1, super.prefixKey + key);
             pstmt.setString(2, value);
             pstmt.setLong(3, expiresAt);
             pstmt.executeUpdate();
