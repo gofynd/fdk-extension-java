@@ -50,7 +50,7 @@ public class ControllerInterceptor implements HandlerInterceptor {
 
                     boolean isSessionInterceptorPassed = sessionInterceptor.preHandle(request, response, handler);
 
-                    log.info("[PLATFORM INTERCEPTOR]");
+                    log.debug("[PLATFORM INTERCEPTOR]");
                     Session fdkSession = (Session) request.getAttribute("fdkSession");
                     PlatformClient platformClient = extension.getPlatformClient(fdkSession.getCompanyId(), fdkSession);
 

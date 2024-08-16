@@ -167,7 +167,7 @@ public class Extension {
 
                                        .findFirst()
                                        .orElseThrow(() -> new FdkSessionNotFound("Cookie not found"));
-            log.info("Cookie found : {}", cookieFound.getName());
+            log.debug("Cookie found : {}", cookieFound.getName());
             return cookieFound.getValue();
         } catch (Exception e) {
             log.error("Failure in fetching Cookie for Company Id : {}", companyId, e);

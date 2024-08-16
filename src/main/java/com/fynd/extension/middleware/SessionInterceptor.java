@@ -30,7 +30,7 @@ public class SessionInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
-        log.info("[SESSION INTERCEPTOR]");
+        log.debug("[SESSION INTERCEPTOR]");
         Session fdkSession = null;
 
         String companyId = StringUtils.isNotEmpty(request.getHeader(X_COMPANY_ID)) ?
