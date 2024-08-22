@@ -32,53 +32,66 @@ FDK Extension Helper Library
       host : 'redis://127.0.0.1:6379'
 
     ext :
-      integration_id : <INTEGRATION_ID>
       api_key : <API_KEY>
       api_secret : <API_SECRET>
       scope : 'company/saleschannel'
       base_url : 'https://test.extension.com'
       access_mode : 'offline'
+   
+   fdk-extension:
+      version: '0.5.0'
     ```
 
 4. Create Main Application class and Initialise the Extension using the properties.
 
 ```java
 @SpringBootApplication
-@ComponentScan(basePackages = {"com.fynd.**", "com.fynd.**","com.gofynd","com.sdk.**"})
+@ComponentScan(basePackages = {"com.fynd.**","com.sdk.**"})
 public class EmailExtensionApplication {
-    
-    private String CACHE_PREFIX_KEY  = "inv_email";
 
-    @Autowired
-    ExtensionProperties extensionProperties;
+   private String CACHE_PREFIX_KEY  = "inv_email";
 
-    @Autowired
-    @Qualifier("jedispoolbean")
-    JedisPool jedis; //Library to connect with Redis Cache
+   @Autowired
+   @Qualifier("jedispoolbean")
+   JedisPool jedis;
 
-    ExtensionCallback callbacks = new ExtensionCallback(
-            (context) ->
-            {
-                Session fdkSession = (Session) context.get("fdk-session");
-                return extensionProperties.getBase_url() + "/company/" + fdkSession.getCompany_id();
-            }, (context) ->
-                System.out.println("in auth callback")
-            , (context) ->
-                System.out.println("in uninstall callback")
-            );
+   @Autowired
+   ExtensionProperties extensionProperties;
+
+   ExtensionCallback callbacks = new ExtensionCallback((request) -> {
+      Session fdkSession = (Session) request.getAttribute("session");
+      System.out.println("In Auth callback");
+      if(request.getParameter("application_id") != null){
+         return extensionProperties.getBaseUrl() + "/company/" + fdkSession.getCompanyId() + "/application/" + request.getParameter("application_id");
+      }
+      else {
+         return extensionProperties.getBaseUrl() + "/company/" + fdkSession.getCompanyId();
+      }
+   }, (context) -> {
+      System.out.println("In install callback");
+      return  extensionProperties.getBaseUrl();
+
+   }, (fdkSession) -> {
+      System.out.println("In uninstall callback");
+      return extensionProperties.getBaseUrl();
+
+   }, (fdkSession) -> {
+      System.out.println("In auto-install callback");
+      return extensionProperties.getBaseUrl();
+   });
 
 
-    public static void main(String[] args) {
-        SpringApplication.run(EmailExtensionApplication.class, args);
-    }
+   public static void main(String[] args) {
+      SpringApplication.run(SampleApplication.class, args);
+   }
 
-    @Bean
-    public com.fynd.extension.model.Extension getExtension() {
-        return Extension.initialize(extensionProperties,
-                new RedisStorage(jedis, CACHE_PREFIX_KEY), //BaseStorage is the parent class, any child class can be used here - REDIS / Memory
-                callbacks);
-    }
-    
+   @Bean
+   public com.fynd.extension.model.Extension getExtension() {
+      Extension extension = new Extension();
+      return extension.initialize(extensionProperties,
+              new RedisStorage(jedis, CACHE_PREFIX_KEY), //BaseStorage is the parent class, any child class can be used here - REDIS / Memory
+              callbacks);
+   }
     
 }
 ```
@@ -86,41 +99,42 @@ public class EmailExtensionApplication {
 5. Define Redis Service which is used to save the intermediate Sessions for each CompanyID
 
 ```java
+@Service
 public class RedisService {
 
-    @Autowired
-    RedisConfig redisConfig;
+   @Value("${redis.host}")
+   private String redisHost;
 
-    JedisPool jedisPool;
+   JedisPool jedisPool;
 
-    @Bean(name = "jedispoolbean")
-    JedisPool getJedis() throws URISyntaxException {
-        JedisPoolConfig poolConfig = new JedisPoolConfig();
-        poolConfig.setMaxTotal(1100);
-        poolConfig.setMaxIdle(16);
-        poolConfig.setMinIdle(16);
-        poolConfig.setTestOnBorrow(true);
-        poolConfig.setTestOnReturn(true);
-        poolConfig.setTestWhileIdle(true);
-        poolConfig.setMinEvictableIdleTimeMillis(Duration.ofSeconds(60)
-                                                         .toMillis());
-        poolConfig.setTimeBetweenEvictionRunsMillis(Duration.ofSeconds(30)
-                                                            .toMillis());
-        poolConfig.setNumTestsPerEvictionRun(3);
-        poolConfig.setBlockWhenExhausted(true);
-        URI redisUri = new URI(redisConfig.getRedisHost());
-        jedisPool = new JedisPool(poolConfig, redisUri); //Use SSL if necessary in envs
-        return jedisPool;
-    }
+   @Bean(name = "jedispoolbean")
+   JedisPool getJedis() throws URISyntaxException {
+      JedisPoolConfig poolConfig = new JedisPoolConfig();
+      poolConfig.setMaxTotal(1100);
+      poolConfig.setMaxIdle(16);
+      poolConfig.setMinIdle(16);
+      poolConfig.setTestOnBorrow(true);
+      poolConfig.setTestOnReturn(true);
+      poolConfig.setTestWhileIdle(true);
+      poolConfig.setJmxEnabled(false);
+      poolConfig.setMinEvictableIdleTimeMillis(Duration.ofSeconds(60)
+              .toMillis());
+      poolConfig.setTimeBetweenEvictionRunsMillis(Duration.ofSeconds(30)
+              .toMillis());
+      poolConfig.setNumTestsPerEvictionRun(3);
+      poolConfig.setBlockWhenExhausted(true);
+      jedisPool = new JedisPool(poolConfig, redisHost); //Use SSL if necessary in envs
+      return jedisPool;
+   }
 
 
-    @PreDestroy
-    public void destroy() {
-        logger.info("Closing the jedis pool connection");
-        if (jedisPool != null)
-            jedisPool.close();
-        jedisPool = null;
-    }
+   @PreDestroy
+   public void destroy() {
+      System.out.println("Closing the jedis pool connection");
+      if (jedisPool != null)
+         jedisPool.close();
+      jedisPool = null;
+   }
 }
 ```
 
@@ -217,46 +231,44 @@ public class PartnerController extends BasePartnerController {
 
 Webhook events can be helpful to handle tasks when certain events occur on platform. You can subscribe to such events by passing **webhook** in Extension Configuration Property
 
-1. Add the Configuration property in Extension yaml File
+1. Add the Configuration property in application yaml File
 
 ```yaml
-webhook:
-  api_path: "/webhook" #<POST API URL>
-  notification_email: "<EMAIL_ID>"
-  subscribe_on_install: false, #optional. Default true
-  subscribed_saleschannel: 'all' #Can be 'SPECIFIC'/'EMPTY'
-  event_map:
-    -
-      name: 'extension/install'
-      handler: extensionInstallHandler #Make sure this matches the Component Bean name
-      category: 'application'
-      version: '1'
-      provider: 'rest' # If not provided, Default is 'rest'
-    -
-      name: 'product/update'
-      handler: productCreateHandler
-      category: 'application'
-      version: '1'
-      provider: 'kafka'
-    -
-      name: 'product/update'
-      handler: productCreateApplicationHandler
-      category: 'application'
-      version: '1'
+ext :
+   api_key : <API_KEY>
+   api_secret : <API_SECRET>
+   scope : ""
+   base_url : "https://test.extension.com"
+   access_mode : "offline"
+   webhook:
+      api_path: "/webhook" #<POST API URL>
+      notification_email: <EMAIL_ID>
+      subscribe_on_install: false, #optional. Default true
+      subscribed_saleschannel: 'all' #Can be 'SPECIFIC'/'EMPTY'
+      event_map:
+         - name: 'product/create'
+           handler: productCreateHandler #Make sure this matches the Component Bean name
+           category: 'company'
+           version: '1'
+           provider: 'rest' # If not provided, Default is 'rest'
+         -
+           name: 'product/delete'
+           handler: productDeleteHandler
+           category: 'company'
+           version: '1'
+           provider: 'kafka'
 
 ```
 
 2. Create Handlers for each event which is mentioned in the Event Map (as specified above)
 
 ```java
-import com.fynd.extension.middleware.EventHandler;
+@Component("productCreateHandler")
+public class ProductCreateHandler implements com.fynd.extension.middleware.EventHandler {
 
-@Component("extensionInstallHandler")
-public class ExtensionInstallHandler extends EventHandler {
-
-   @java.lang.Override
+   @Override
    public void handle(String eventName, Object body, String companyId, String applicationId) {
-      //Write Business logic here
+      // Code to handle webhook event
    }
 }
 ```
@@ -281,10 +293,10 @@ public class WebhookController {
    public Map<String, Boolean> receiveWebhookEvents(HttpServletRequest httpServletRequest) {
       try {
          webhookService.processWebhook(httpServletRequest);
-         return new Collections.singletonMap("success", true);
+         return Collections.singletonMap("success", true);
       } catch (Exception e) {
          log.error("Exception occurred", e);
-         return new Collections.singletonMap("success", false);
+         return Collections.singletonMap("success", false);
       }
    }
 }
