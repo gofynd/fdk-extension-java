@@ -19,4 +19,12 @@ public class EventMapProperties {
 
     private String topic;
 
+    private String queue;
+
+    private String workflowName;
+
+    private String accountId;
+
+    private String eventBridgeName;
+
 }

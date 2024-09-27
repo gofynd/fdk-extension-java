@@ -16,39 +16,16 @@ import lombok.Setter;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class SubscriberEventMapping{
 
-
-
-
-
-
-
     @JsonProperty("id")
     private Double id;
-
-
-
 
     @JsonProperty("event_id")
     private Double eventId;
 
-
-
-
     @JsonProperty("subscriber_id")
     private Double subscriberId;
 
-
-
-
-    @JsonProperty("topic")
-    private String topic;
-
-
-
-
-    @JsonProperty("created_on")
-    private String createdOn;
-
-
+    @JsonProperty("broadcaster_config")
+    private BroadcasterConfig BroadcasterConfig;
 
 }

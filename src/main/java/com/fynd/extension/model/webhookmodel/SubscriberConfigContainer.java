@@ -22,4 +22,16 @@ public class SubscriberConfigContainer {
     @JsonProperty("kafka")
     private SubscriberResponse kafka;
 
+    @JsonProperty("pub_sub")
+    private SubscriberResponse pubSub;
+
+    @JsonProperty("sqs")
+    private SubscriberResponse sqs;
+
+    @JsonProperty("event_bridge")
+    private SubscriberResponse eventBridge;
+
+    @JsonProperty("temporal")
+    private SubscriberResponse temporal;
+
 }
