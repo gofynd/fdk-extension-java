@@ -246,18 +246,36 @@ ext :
       subscribe_on_install: false, #optional. Default true
       subscribed_saleschannel: 'all' #Can be 'SPECIFIC'/'EMPTY'
       event_map:
-         - name: 'product/create'
+         - name: 'product/update'
            handler: productCreateHandler #Make sure this matches the Component Bean name
            category: 'company'
            version: '1'
            provider: 'rest' # If not provided, Default is 'rest'
-         -
-           name: 'product/delete'
+         - name: 'product/delete'
            handler: productDeleteHandler
            category: 'company'
            version: '1'
            provider: 'kafka'
-
+         - name: "brand/create"
+           topic: "company-brand-create"
+           category: "company"
+           version: 1
+           provider: "pub_sub"
+         - name: "extension/install"
+           queue: "extension-install"
+           workflow_name: "extension"
+           version: 1
+           provider: "temporal"
+         - name: "location/create"
+           queue: "company-location-create"
+           category: "company"
+           version: 1
+           provider: "sqs"
+         - name: "product-size/create"
+           event_bridge_name: "company-product-size-create"
+           category: "company"
+           version: 1
+           provider: "event_bridge"
 ```
 
 2. Create Handlers for each event which is mentioned in the Event Map (as specified above)
@@ -307,6 +325,39 @@ public class WebhookController {
 > For enabling events manually use function `enableSalesChannelWebhook`
 >
 > To disable receiving events for a saleschannel use function `disableSalesChannelWebhook`.
+
+
+```java
+   import com.fynd.extension.model.Extension;
+   import com.sdk.platform.PlatformClient;
+   import com.fynd.extension.service.WebhookService;
+   import jakarta.servlet.http.HttpServletRequest;
+   import lombok.extern.slf4j.Slf4j;
+   import org.springframework.web.bind.annotation.GetMapping;
+   import org.springframework.web.bind.annotation.RequestMapping;
+   import org.springframework.web.bind.annotation.RestController;
+   
+   @RestController
+   @RequestMapping("/api")
+   @Slf4j
+   public class PlatformController extends BasePlatformController {
+      @GetMapping(value = "/enableSalesChannelWebhook", produces = "application/json")
+      public String getProducts(HttpServletRequest request) {
+         try {
+            PlatformClient platformClient = (PlatformClient) request.getAttribute("platformClient");
+            Extension extension = (Extension) request.getAttribute("extension");
+            WebhookService webhookService = extension.getWebhookService();
+            webhookService.enableSalesChannelWebhook(platformClient,"66e3b32eca4335d0feff486c");
+            return "Webhook enabled successfully!";
+         } catch (Exception e) {
+            System.out.println(e.getMessage());
+            throw new RuntimeException(e);
+         }
+
+      }
+    }
+
+```
 
 ##### How webhook registry subscribes to webhooks on Fynd Platform?
 
