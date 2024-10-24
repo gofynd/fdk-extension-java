@@ -14,37 +14,20 @@ import lombok.Setter;
 @Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class SubscriberEventMapping{
+public class BroadcasterConfig {
 
+    @JsonProperty("topic")
+    private String topic;
 
+    @JsonProperty("queue")
+    private String queue;
 
+    @JsonProperty("workflow_name")
+    private String workflowName;
 
-
-
-
-    @JsonProperty("id")
-    private Double id;
-
-
-
-
-    @JsonProperty("event_id")
-    private Double eventId;
-
-
-
-
-    @JsonProperty("subscriber_id")
-    private Double subscriberId;
-
+    @JsonProperty("event_bridge_name")
+    private String eventBridgeName;
 
     @JsonProperty("created_on")
     private String createdOn;
-
-
-    @JsonProperty("broadcaster_config")
-    private BroadcasterConfig BroadcasterConfig;
-
-
-
 }

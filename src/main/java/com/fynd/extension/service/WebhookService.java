@@ -367,7 +367,7 @@ public class WebhookService {
                         .filter(e -> event.getSlug().equals(e.getEventCategory() + "/" + e.getEventName() + "/" + e.getEventType() + "/v" + e.getVersion()))
                         .findFirst()
                         .orElse(null);
-                if (existingEvent != null && !event.getTopic().equals(existingEvent.getSubscriberEventMapping().getTopic())) {
+                if (existingEvent != null && !event.getTopic().equals(existingEvent.getSubscriberEventMapping().getBroadcasterConfig().getTopic())) {
                     return true; // Topics do not match
                 }
             }
@@ -579,7 +579,7 @@ public class WebhookService {
                             Events event = new Events();
                             event.setSlug(eventConfig.getEventCategory() + "/" + eventConfig.getEventName() + "/" + eventConfig.getEventType() + "/v" + eventConfig.getVersion());
                             if(configType.equals("kafka")){
-                                event.setTopic(eventConfig.getSubscriberEventMapping().getTopic());
+                                event.setTopic(eventConfig.getSubscriberEventMapping().getBroadcasterConfig().getTopic());
                             }
                             events.add(event);
                         });
@@ -642,7 +642,7 @@ public class WebhookService {
                             Events event = new Events();
                             event.setSlug(eventConfig.getEventCategory() + "/" + eventConfig.getEventName() + "/" + eventConfig.getEventType() + "/v" + eventConfig.getVersion());
                             if(configType.equals("kafka")){
-                                event.setTopic(eventConfig.getSubscriberEventMapping().getTopic());
+                                event.setTopic(eventConfig.getSubscriberEventMapping().getBroadcasterConfig().getTopic());
                             }
                             events.add(event);
                         });
