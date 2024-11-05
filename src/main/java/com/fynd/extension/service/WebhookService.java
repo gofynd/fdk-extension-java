@@ -94,17 +94,18 @@ public class WebhookService {
             initialize(extensionProperties);
         }
 
+        SubscriberConfigContainer subscriberResponseContainer = getSubscriberConfig(platformClient);
         boolean subscriberSyncedForAllProvider;
 
         try{
-            subscriberSyncedForAllProvider = syncSubscriberConfigForAllProviders(platformClient);
+            subscriberSyncedForAllProvider = syncSubscriberConfigForAllProviders(platformClient, subscriberResponseContainer);
         } catch(IOException e){
             log.error("Exception occurred during Webhook Sync : ", e);
             throw new FdkWebhookRegistrationError("Failed to sync webhook events. Reason: " + e.getMessage());
         }
 
         if(!subscriberSyncedForAllProvider){
-            SubscriberConfigContainer subscriberResponseContainer = getSubscriberConfig(platformClient);
+            subscriberResponseContainer = getSubscriberConfig(platformClient);
             syncSubscriberConfig(subscriberResponseContainer.getRest(), "rest", platformClient, enableWebhooks);
             syncSubscriberConfig(subscriberResponseContainer.getKafka(), "kafka", platformClient, enableWebhooks);
             syncSubscriberConfig(subscriberResponseContainer.getPubSub(), "pub_sub", platformClient, enableWebhooks);
@@ -180,8 +181,8 @@ public class WebhookService {
     }
 
 
-    boolean syncSubscriberConfigForAllProviders(PlatformClient platformClient) throws IOException {
-        SubscriberConfigRequestV3 payload = createRegisterPayloadData(platformClient);
+    boolean syncSubscriberConfigForAllProviders(PlatformClient platformClient, SubscriberConfigContainer subscriberResponseContainer) throws IOException {
+        SubscriberConfigRequestV3 payload = createRegisterPayloadData(subscriberResponseContainer);
         PlatformConfig platformConfig = platformClient.getConfig();
         Response<SubscriberConfigResponseV3> res;
         res = getPlatformClientCallApiList(platformConfig).registerSubscriberToEventV3(platformConfig.getCompanyId(), payload).execute();
@@ -200,7 +201,7 @@ public class WebhookService {
         return true;
     }
 
-    SubscriberConfigRequestV3 createRegisterPayloadData(PlatformClient platformClient){
+    SubscriberConfigRequestV3 createRegisterPayloadData(SubscriberConfigContainer subscriberResponseContainer){
         SubscriberConfigRequestV3 payload = new SubscriberConfigRequestV3();
         WebhookConfig config = new WebhookConfig();
         Association association = new Association();
@@ -231,6 +232,40 @@ public class WebhookService {
         temporalMap.setEvents(new ArrayList<>());
         sqsMap.setEvents(new ArrayList<>());
         eventBridgeMap.setEvents(new ArrayList<>());
+        // Check if the subscribed sales channel is "specific"
+        if ("specific".equals(this.webhookProperties.getSubscribedSalesChannel())) {
+            //Every provider has same association. Get the first one.
+            SubscriberResponse firstConfig = null;
+
+            if (subscriberResponseContainer.getRest() != null) {
+                firstConfig = subscriberResponseContainer.getRest();
+            } else if (subscriberResponseContainer.getKafka() != null) {
+                firstConfig = subscriberResponseContainer.getKafka();
+            } else if (subscriberResponseContainer.getPubSub() != null) {
+                firstConfig = subscriberResponseContainer.getPubSub();
+            } else if (subscriberResponseContainer.getSqs() != null) {
+                firstConfig = subscriberResponseContainer.getSqs();
+            } else if (subscriberResponseContainer.getEventBridge() != null) {
+                firstConfig = subscriberResponseContainer.getEventBridge();
+            } else if (subscriberResponseContainer.getTemporal() != null) {
+                firstConfig = subscriberResponseContainer.getTemporal();
+            }
+
+            // If a valid firstConfig is found and its association criteria is SPECIFIC
+            if (firstConfig != null && Criteria.SPECIFIC.getValue().equals(firstConfig.getAssociation().getCriteria())) {
+                payload.getWebhookConfig().setAssociation(firstConfig.getAssociation());
+            }
+        }
+
+        if(Criteria.SPECIFIC.getValue().equals(payload.getWebhookConfig().getAssociation().getCriteria())){
+            String isMarketplace = this.webhookProperties.getMarketplace() ? "marketplace" : null;
+            restMap.setType(isMarketplace);
+            kafkaMap.setType(isMarketplace);
+            pubSubMap.setType(isMarketplace);
+            temporalMap.setType(isMarketplace);
+            sqsMap.setType(isMarketplace);
+            eventBridgeMap.setType(isMarketplace);
+        }
         for(EventMapProperties event: webhookProperties.getEventMap()) {
             EventV3 providerEvent = new EventV3();
             String[] eventDetails = event.getName().split("/");
@@ -293,7 +328,12 @@ public class WebhookService {
             throw new FdkInvalidWebhookConfig(Fields.INVALID_PATH);
         }
 
-        //3. Validate Event Map
+        //3. Validate Type
+        if (webhookProperties.getMarketplace() != null && webhookProperties.getMarketplace() && !"specific".equals(webhookProperties.getSubscribedSalesChannel())) {
+            throw new FdkInvalidWebhookConfig(Fields.INVALID_TYPE);
+        }
+
+        //4. Validate Event Map
         if (CollectionUtils.isEmpty(webhookProperties.getEventMap())) {
             throw new FdkInvalidWebhookConfig(Fields.MISSING_EVENTS);
         }
@@ -494,6 +534,25 @@ public class WebhookService {
             subscriberConfig.setWebhookUrl(this.webhookUrl);
             updated = true;
         }
+
+        if (this.associationCriteria == Criteria.SPECIFIC.getValue()) {
+            if ("marketplace".equals(subscriberConfig.getType()) && !webhookProperties.getMarketplace()) {
+                log.debug(String.format("Type updated from %s to null", subscriberConfig.getType()));
+                subscriberConfig.setType(null);
+                updated = true;
+            } else if ((subscriberConfig.getType() == null || !"marketplace".equals(subscriberConfig.getType())) && webhookProperties.getMarketplace()) {
+                log.debug(String.format("Type updated from %s to marketplace", subscriberConfig.getType()));
+                subscriberConfig.setType("marketplace");
+                updated = true;
+            }
+        } else {
+            if ("marketplace".equals(subscriberConfig.getType())) {
+                log.debug(String.format("Type updated from %s to null", subscriberConfig.getType()));
+                subscriberConfig.setType(null);
+                updated = true;
+            }
+        }
+
         return updated;
     }
 
@@ -778,7 +837,7 @@ public class WebhookService {
 
                 if (Objects.nonNull(subscriberConfig.getAssociation()) && !CollectionUtils.isEmpty(
                         subscriberConfig.getAssociation()
-                                .getApplicationId()) && !subscriberConfig.getAssociation()
+                                .getApplicationId()) && subscriberConfig.getAssociation()
                         .getApplicationId()
                         .contains(applicationId)) {
                     subscriberConfig.getAssociation()
@@ -787,6 +846,13 @@ public class WebhookService {
                     subscriberConfig.getAssociation()
                             .setCriteria(getCriteria(subscriberConfig.getAssociation()
                                     .getApplicationId()));
+                }
+
+                if(Criteria.SPECIFIC.getValue().equals(subscriberConfig.getAssociation().getCriteria())){
+                    String isMarketplace = this.webhookProperties.getMarketplace() ? "marketplace" : null;
+                    subscriberConfig.setType(isMarketplace);
+                }else {
+                    subscriberConfig.setType(null);
                 }
                 this.updateSubscriberConfig(platformClient.getConfig(), subscriberConfig);
             }
@@ -842,6 +908,10 @@ public class WebhookService {
                     subscriberConfig.getAssociation()
                             .setCriteria(getCriteria(subscriberConfig.getAssociation()
                                     .getApplicationId()));
+                }
+                if(Criteria.SPECIFIC.getValue().equals(subscriberConfig.getAssociation().getCriteria())){
+                    String isMarketplace = this.webhookProperties.getMarketplace() ? "marketplace" : null;
+                    subscriberConfig.setType(isMarketplace);
                 }
                 this.updateSubscriberConfig(platformClient.getConfig(), subscriberConfig);
             }
@@ -935,6 +1005,7 @@ public class WebhookService {
     interface Fields {
         String INVALID_EMAIL = "Invalid or missing notification_email";
         String INVALID_PATH = "Invalid or missing api_path";
+        String INVALID_TYPE = "marketplace is only allowed when subscribed_saleschannel is specific";
         String MISSING_EVENTS = "Invalid or missing event_map";
         String HMAC = "hmac";
         String SPECIFIC_CHANNEL = "specific";
