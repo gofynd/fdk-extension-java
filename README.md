@@ -244,7 +244,8 @@ ext :
       api_path: "/webhook" #<POST API URL>
       notification_email: <EMAIL_ID>
       subscribe_on_install: false, #optional. Default true
-      subscribed_saleschannel: 'all' #Can be 'SPECIFIC'/'EMPTY'
+      subscribed_saleschannel: 'specific' #Optional. Default all
+      marketplace: true, # to receive marketplace saleschannel events. Only allowed when subscribed_saleschannel is set to specific
       event_map:
          - name: 'product/update'
            handler: productCreateHandler #Make sure this matches the Component Bean name
