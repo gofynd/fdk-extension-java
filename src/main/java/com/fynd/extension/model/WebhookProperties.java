@@ -30,12 +30,5 @@ public class WebhookProperties {
     public void setSubscribedSalesChannel(String subscribedSalesChannel) {
         this.subscribedSalesChannel = Optional.ofNullable(subscribedSalesChannel).orElse(null);
     }
-
-//    public void setCustomHeaders(Object customHeaders) {
-//        this.customHeaders = Optional.ofNullable(customHeaders).orElse(null);
-//    }
-//    public Object getCustomHeaders() {
-//        return Optional.ofNullable(customHeaders).orElse(null);
-//    }
-
+    
 }
