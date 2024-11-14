@@ -310,6 +310,7 @@ public class WebhookService {
         SubscriberConfigRequestV2 subscriberConfig = new SubscriberConfigRequestV2();
         subscriberConfig.setName(subscriberResponse.getName());
         subscriberConfig.setId(subscriberResponse.getId());
+        subscriberConfig.setCustomHeaders(subscriberResponse.getCustomHeaders());
         if(configType.equals("rest")){
             subscriberConfig.setWebhookUrl(subscriberResponse.getWebhookUrl());
         }
@@ -356,6 +357,30 @@ public class WebhookService {
             log.info("Webhook URL updated from : " + subscriberConfig.getWebhookUrl() + " to : " + this.webhookUrl);
             subscriberConfig.setWebhookUrl(this.webhookUrl);
             updated = true;
+        }
+
+        // Custom headers
+        log.info("Local custom headers : "  + webhookProperties.getCustomHeaders());
+        log.info("DB custom headers : "  + subscriberConfig.getCustomHeaders());
+        // Adding custom headers
+        if(Objects.isNull(subscriberConfig.getCustomHeaders()) && Objects.nonNull((webhookProperties.getCustomHeaders()))){
+            log.info("Adding custom headers");
+            subscriberConfig.setCustomHeaders(webhookProperties.getCustomHeaders());
+            updated = true;
+        }
+        // Removing custom headers
+        else if(Objects.nonNull(subscriberConfig.getCustomHeaders()) && !subscriberConfig.getCustomHeaders().isEmpty() && Objects.isNull((webhookProperties.getCustomHeaders()))){
+            log.info("Removing custom headers");
+            subscriberConfig.setCustomHeaders(new HashMap<String, String>());
+            updated = true;
+        }
+        else if(Objects.nonNull(subscriberConfig.getCustomHeaders())){
+            // Updating custom headers
+            if(!webhookProperties.getCustomHeaders().equals(subscriberConfig.getCustomHeaders())){
+                log.info("Updating custom headers");
+                subscriberConfig.setCustomHeaders(webhookProperties.getCustomHeaders());
+                updated = true;
+            }
         }
         return updated;
     }
@@ -484,7 +509,7 @@ public class WebhookService {
             subscriberConfig.setStatus(SubscriberStatus.inactive);
             subscriberConfig.setEvents(null); // Don't send events array in request
         }
-        
+
         Response<SubscriberConfigResponse> res;
         res = this.getPlatformClientCallApiList(platformConfig).updateSubscriberV2(platformConfig.getCompanyId(), subscriberConfig).execute();
         if(!res.isSuccessful()){

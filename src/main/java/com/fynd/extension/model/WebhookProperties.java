@@ -3,6 +3,7 @@ package com.fynd.extension.model;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,7 +17,7 @@ public class WebhookProperties {
 
     private String subscribedSalesChannel;
 
-    private Object customHeaders;
+    private HashMap<String, String> customHeaders;
 
     private List<EventMapProperties> eventMap;
 
