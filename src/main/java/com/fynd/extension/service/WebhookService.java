@@ -109,6 +109,9 @@ public class WebhookService {
                 if((configType.equals("rest") && this.restEventMap.isEmpty()) || (configType.equals("kafka") && this.kafkaEventMap.isEmpty())){
                     return;
                 }
+                if(!Objects.isNull(this.webhookProperties.getCustomHeaders())){
+                    subscriberConfig.setCustomHeaders(this.webhookProperties.getCustomHeaders());
+                }
                 subscriberConfig.setName(this.extensionProperties.getApiKey());
                 if(configType.equals("rest")){
                     subscriberConfig.setWebhookUrl(
@@ -136,7 +139,7 @@ public class WebhookService {
                     }
                 }
                 this.registerSubscriberConfig(platformClient.getConfig(), subscriberConfig);
-                log.info("Webhook Config Details Registered");
+                log.info("Webhook Config Details Registered" + objectMapper.writeValueAsString(subscriberConfig));
             } else {
                 log.info("Webhook config on platform side for company id : " + platformClient.getConfig()
                         .getCompanyId() + " with config : " +

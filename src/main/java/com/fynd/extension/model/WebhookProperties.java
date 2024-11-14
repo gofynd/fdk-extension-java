@@ -16,6 +16,8 @@ public class WebhookProperties {
 
     private String subscribedSalesChannel;
 
+    private Object customHeaders;
+
     private List<EventMapProperties> eventMap;
 
     private Boolean subscribeOnInstall;
@@ -27,4 +29,12 @@ public class WebhookProperties {
     public void setSubscribedSalesChannel(String subscribedSalesChannel) {
         this.subscribedSalesChannel = Optional.ofNullable(subscribedSalesChannel).orElse(null);
     }
+
+//    public void setCustomHeaders(Object customHeaders) {
+//        this.customHeaders = Optional.ofNullable(customHeaders).orElse(null);
+//    }
+//    public Object getCustomHeaders() {
+//        return Optional.ofNullable(customHeaders).orElse(null);
+//    }
+
 }
