@@ -30,5 +30,4 @@ public class WebhookProperties {
     public void setSubscribedSalesChannel(String subscribedSalesChannel) {
         this.subscribedSalesChannel = Optional.ofNullable(subscribedSalesChannel).orElse(null);
     }
-    
 }

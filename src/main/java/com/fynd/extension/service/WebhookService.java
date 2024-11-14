@@ -139,7 +139,7 @@ public class WebhookService {
                     }
                 }
                 this.registerSubscriberConfig(platformClient.getConfig(), subscriberConfig);
-                log.info("Webhook Config Details Registered" + objectMapper.writeValueAsString(subscriberConfig));
+                log.info("Webhook Config Details Registered");
             } else {
                 log.info("Webhook config on platform side for company id : " + platformClient.getConfig()
                         .getCompanyId() + " with config : " +
@@ -374,7 +374,7 @@ public class WebhookService {
             subscriberConfig.setCustomHeaders(new HashMap<String, String>());
             updated = true;
         }
-        else if(Objects.nonNull(subscriberConfig.getCustomHeaders())){
+        else if(Objects.nonNull(subscriberConfig.getCustomHeaders()) && Objects.nonNull(webhookProperties.getCustomHeaders())){
             // Updating custom headers
             if(!webhookProperties.getCustomHeaders().equals(subscriberConfig.getCustomHeaders())){
                 log.info("Updating custom headers");
@@ -509,7 +509,7 @@ public class WebhookService {
             subscriberConfig.setStatus(SubscriberStatus.inactive);
             subscriberConfig.setEvents(null); // Don't send events array in request
         }
-
+        
         Response<SubscriberConfigResponse> res;
         res = this.getPlatformClientCallApiList(platformConfig).updateSubscriberV2(platformConfig.getCompanyId(), subscriberConfig).execute();
         if(!res.isSuccessful()){
