@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.HashMap;
 import java.util.List;
 
 /*
@@ -48,7 +49,7 @@ public class SubscriberConfig{
 
 
     @JsonProperty("custom_headers")
-    private Object customHeaders;
+    private HashMap<String, String> customHeaders;
 
 
 
