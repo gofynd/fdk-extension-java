@@ -40,4 +40,10 @@ public class EventV3 {
     @JsonProperty("event_bridge_name")
     private String eventBridgeName;
 
+    @JsonProperty("filters")
+    private Object filters;
+
+    @JsonProperty("reducer")
+    private Object reducer;
+
 }

@@ -273,6 +273,8 @@ public class WebhookService {
             providerEvent.setEventName(eventDetails[0]);
             providerEvent.setEventType(eventDetails[1]);
             providerEvent.setVersion(event.getVersion());
+            providerEvent.setFilters(event.getFilters());
+            providerEvent.setReducer(event.getReducer());
             switch (event.getProvider()) {
                 case "rest":
                     eventMap.put("rest", restMap);
@@ -452,6 +454,8 @@ public class WebhookService {
         for(Map.Entry<String, EventMapProperties> event : eventMap.entrySet()){
             Events eventData = new Events();
             eventData.setSlug(event.getKey());
+            eventData.setFilters(event.getValue().getFilters());
+            eventData.setReducer(event.getValue().getReducer());
             if(configType.equals("kafka") || configType.equals("pub_sub")){
                 eventData.setTopic(event.getValue().getTopic());
             }
@@ -559,41 +563,46 @@ public class WebhookService {
     private boolean isEventDiff(SubscriberResponse existingEvents,
                                 SubscriberConfigRequestV2 newEvents) {
         // Check if the provider is 'kafka' and perform the topic equality check
-        if (!newEvents.getProvider().equals("rest") ) {
-            List<EventConfig> existingEventList = existingEvents.getEventConfigs();
-            for (Events event : newEvents.getEvents()) {
-                EventConfig existingEvent = existingEventList.stream()
-                        .filter(e -> event.getSlug().equals(e.getEventCategory() + "/" + e.getEventName() + "/" + e.getEventType() + "/v" + e.getVersion()))
-                        .findFirst()
-                        .orElse(null);
-                if (existingEvent != null) {
-                    switch (newEvents.getProvider()) {
-                        case "kafka", "pub_sub":
-                            if(!event.getTopic().equals(existingEvent.getSubscriberEventMapping().getBroadcasterConfig().getTopic())){
-                                return true;
-                            }
-                            break;
-                        case "temporal":
-                            if(!event.getQueue().equals(existingEvent.getSubscriberEventMapping().getBroadcasterConfig().getQueue())){
-                                return true;
-                            }else if(!event.getWorkflowName().equals(existingEvent.getSubscriberEventMapping().getBroadcasterConfig().getWorkflowName())){
-                                return true;
-                            }
-                            break;
-                        case "sqs":
-                            if(!event.getQueue().equals(existingEvent.getSubscriberEventMapping().getBroadcasterConfig().getQueue())){
-                                return true;
-                            }
-                            break;
-                        case "event_bridge":
-                            if(!event.getEventBridgeName().equals(existingEvent.getSubscriberEventMapping().getBroadcasterConfig().getEventBridgeName())){
-                                return true;
-                            }
-                            break;
-                    }
+        List<EventConfig> existingEventList = existingEvents.getEventConfigs();
+        for (Events event : newEvents.getEvents()) {
+            EventConfig existingEvent = existingEventList.stream()
+                    .filter(e -> event.getSlug().equals(e.getEventCategory() + "/" + e.getEventName() + "/" + e.getEventType() + "/v" + e.getVersion()))
+                    .findFirst()
+                    .orElse(null);
+            if (existingEvent != null) {
+                if(!event.getFilters().equals(existingEvent.getFilters())){
+                    return true;
+                }else if (!event.getReducer().equals(existingEvent.getReducer())){
+                    return true;
+                }
+
+                switch (newEvents.getProvider()) {
+                    case "kafka", "pub_sub":
+                        if(!event.getTopic().equals(existingEvent.getSubscriberEventMapping().getBroadcasterConfig().getTopic())){
+                            return true;
+                        }
+                        break;
+                    case "temporal":
+                        if(!event.getQueue().equals(existingEvent.getSubscriberEventMapping().getBroadcasterConfig().getQueue())){
+                            return true;
+                        }else if(!event.getWorkflowName().equals(existingEvent.getSubscriberEventMapping().getBroadcasterConfig().getWorkflowName())){
+                            return true;
+                        }
+                        break;
+                    case "sqs":
+                        if(!event.getQueue().equals(existingEvent.getSubscriberEventMapping().getBroadcasterConfig().getQueue())){
+                            return true;
+                        }
+                        break;
+                    case "event_bridge":
+                        if(!event.getEventBridgeName().equals(existingEvent.getSubscriberEventMapping().getBroadcasterConfig().getEventBridgeName())){
+                            return true;
+                        }
+                        break;
                 }
             }
         }
+
 
 
         Set<String> existingEventSlugs = existingEvents.getEventConfigs()

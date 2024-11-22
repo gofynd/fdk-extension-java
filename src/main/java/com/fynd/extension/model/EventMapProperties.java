@@ -27,4 +27,7 @@ public class EventMapProperties {
 
     private String eventBridgeName;
 
+    private Object filters;
+    private Object reducer;
+
 }
