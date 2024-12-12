@@ -360,6 +360,35 @@ public class WebhookController {
 
 ```
 
+#### How to register for Webhook Events?
+
+A filter and reducer can be provided to refine the data delivered for each subscribed event. The Filter functionality allows selective delivery of data by specifying conditions based on JSONPath queries and logical operators. Reducer allow customization of the payload structure by specifying only the fields needed by the subscriber. The reducer extracts fields from the event’s data and restructures them as needed.
+
+```yaml
+ext :
+   api_key : <API_KEY>
+   api_secret : <API_SECRET>
+   scope : ""
+   base_url : "https://test.extension.com"
+   access_mode : "offline"
+   webhook:
+      api_path: "/webhook" #<POST API URL>
+      notification_email: <EMAIL_ID>
+      subscribe_on_install: false, #optional. Default true
+      subscribed_saleschannel: 'specific' #Optional. Default all
+      marketplace: true, # to receive marketplace saleschannel events. Only allowed when subscribed_saleschannel is set to specific
+      event_map:
+         - name: 'product/update'
+           handler: productCreateHandler #Make sure this matches the Component Bean name
+           category: 'company'
+           version: 1
+           filters:
+            query: "$.payload.brand.uid"
+            condition: "(uid) => uid === 130"
+           reducer:
+            brand_name: "$.payload.brand.name"
+```
+
 ##### How webhook registry subscribes to webhooks on Fynd Platform?
 
 After webhook config is passed to initialize whenever extension is launched to any of companies where extension is installed or to be installed, webhook config data is used to create webhook subscriber on Fynd Platform for that company.
