@@ -108,7 +108,7 @@ public class ExtensionController {
             return ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT)
                                  .header(Fields.X_COMPANY_ID, companyId)
                                  .header(HttpHeaders.LOCATION, redirectUrl)
-                                 .header(HttpHeaders.SET_COOKIE, resCookie.toString())
+                                 .header(HttpHeaders.SET_COOKIE, resCookie.toString()+ "; Partitioned;")
                                  .build();
         } catch (Exception error) {
             log.error("Exception in install call ", error);
@@ -197,7 +197,7 @@ public class ExtensionController {
                 return ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT)
                                      .header(Fields.X_COMPANY_ID, companyId)
                                      .header(HttpHeaders.LOCATION, redirectUrl)
-                                     .header(HttpHeaders.SET_COOKIE, resCookie.toString())
+                                     .header(HttpHeaders.SET_COOKIE, resCookie.toString()+ "; Partitioned;")
                                      .build();
             }
         } catch (Exception error) {
