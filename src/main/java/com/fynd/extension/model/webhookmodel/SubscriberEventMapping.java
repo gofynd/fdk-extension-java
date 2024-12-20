@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.Map;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -27,5 +29,11 @@ public class SubscriberEventMapping{
 
     @JsonProperty("broadcaster_config")
     private BroadcasterConfig BroadcasterConfig;
+
+    @JsonProperty("filters")
+    private Map<String, Object> filters;
+
+    @JsonProperty("reducer")
+    private Map<String, Object> reducer;
 
 }

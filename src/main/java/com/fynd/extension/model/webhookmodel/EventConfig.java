@@ -82,14 +82,6 @@ public class EventConfig{
     private String description;
 
 
-    @JsonProperty("filters")
-    private Object filters;
-
-
-    @JsonProperty("reducer")
-    private Object reducer;
-
-
 
     @JsonProperty("created_on")
     private String createdOn;

@@ -570,9 +570,9 @@ public class WebhookService {
                     .findFirst()
                     .orElse(null);
             if (existingEvent != null) {
-                if(!event.getFilters().equals(existingEvent.getFilters())){
+                if(!event.getFilters().equals(existingEvent.getSubscriberEventMapping().getFilters())){
                     return true;
-                }else if (!event.getReducer().equals(existingEvent.getReducer())){
+                }else if (!event.getReducer().equals(existingEvent.getSubscriberEventMapping().getReducer())){
                     return true;
                 }
 

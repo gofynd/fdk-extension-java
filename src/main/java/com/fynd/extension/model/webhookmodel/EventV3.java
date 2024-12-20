@@ -8,6 +8,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.Map;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -41,9 +43,9 @@ public class EventV3 {
     private String eventBridgeName;
 
     @JsonProperty("filters")
-    private Object filters;
+    private Map<String, Object> filters;
 
     @JsonProperty("reducer")
-    private Object reducer;
+    private Map<String, Object> reducer;
 
 }

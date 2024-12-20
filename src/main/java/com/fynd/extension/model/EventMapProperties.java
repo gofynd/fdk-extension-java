@@ -3,6 +3,8 @@ package com.fynd.extension.model;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.Map;
+
 @Getter
 @Setter
 public class EventMapProperties {
@@ -27,7 +29,8 @@ public class EventMapProperties {
 
     private String eventBridgeName;
 
-    private Object filters;
-    private Object reducer;
+    private Map<String, Object> filters;
+
+    private Map<String, Object> reducer;
 
 }
