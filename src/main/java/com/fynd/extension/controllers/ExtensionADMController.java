@@ -100,7 +100,7 @@ public class ExtensionADMController {
             request.setAttribute("session", session);
             return ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT)
                     .header(HttpHeaders.LOCATION, redirectUrl)
-                    .header(HttpHeaders.SET_COOKIE, resCookie.toString())
+                    .header(HttpHeaders.SET_COOKIE, resCookie.toString()+ "; Partitioned;")
                     .build();
         } catch (Exception error) {
             log.error("Exception in install call ", error);
@@ -181,7 +181,7 @@ public class ExtensionADMController {
                 String admLaunchCallback = uriBuilderFactory.builder().pathSegment("admin").build().toString();
                 return ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT)
                                      .header(HttpHeaders.LOCATION, admLaunchCallback)
-                                     .header(HttpHeaders.SET_COOKIE, resCookie.toString())
+                                     .header(HttpHeaders.SET_COOKIE, resCookie.toString()+ "; Partitioned;")
                                      .build();
             }
         } catch (Exception error) {
