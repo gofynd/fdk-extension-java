@@ -198,6 +198,40 @@ public class ExampleOfflineAccessMode {
 }
 ```
 
+#### How to get partnerClient for offline access_mode?
+
+To obtain the `PartnerClient` for offline access mode in your Java extension, use the provided `ExtensionService` class.
+This example demonstrates how to retrieve response time using the obtained `PartnerClient`
+
+```java
+@RestController
+@RequestMapping("/api/v1")
+public class ExampleOfflineAccessMode {
+
+    @Autowired
+    ExtensionService extensionService;
+
+    @GetMapping(value = "/response-time", produces = "application/json")
+    public WebhookPartnerModels.ResponseTimeTs getResponseTime() {
+        try {
+            String organizationId = "64b0e718f56860951c34d735";
+            PartnerClient partnerClient = extensionService.getPartnerClient("64b0e718f56860951c34d735");
+            WebhookPartnerModels.ResponseTimeTs  responseTime = partnerClient.webhook.responseTimeSummary(
+                   "66c5b90b2d58ee212f3891f8",
+                   "2024-11-18T11:38:44+05:30",
+                   "2024-11-18T14:38:44+05:30"
+            );
+
+            return responseTime;
+
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+}
+```
+
 #### How to call partner apis?
 
 To call partner api you need to have instance of `PartnerClient`. Instance holds methods for SDK classes.

@@ -36,4 +36,7 @@ public class SubscriberEventMapping{
     @JsonProperty("reducer")
     private Map<String, Object> reducer;
 
+    @JsonProperty("created_on")
+    private String createdOn;
+
 }

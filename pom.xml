@@ -9,7 +9,7 @@
 	</parent>
 	<groupId>com.fynd</groupId>
 	<artifactId>fynd-extension-java</artifactId>
-	<version>0.6.4</version>
+	<version>0.6.6</version>
 	<name>fynd-extension-java</name>
 	<description>Java Fynd Extension Library</description>
 	<properties>
@@ -17,7 +17,7 @@
 		<json.version>20231013</json.version>
 		<jedis.version>4.3.1</jedis.version>
 		<commons.version>1.7</commons.version>
-		<fdk-client.version>1.3.11-beta.4</fdk-client.version>
+		<fdk-client.version>1.4.13</fdk-client.version>
 	</properties>
 	<dependencies>
 		<dependency>
