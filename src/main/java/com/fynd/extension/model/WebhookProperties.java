@@ -20,6 +20,8 @@ public class WebhookProperties {
 
     private Boolean subscribeOnInstall;
 
+    private Boolean marketplace;
+
     public String getSubscribedSalesChannel() {
         return subscribedSalesChannel;
     }
