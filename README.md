@@ -383,10 +383,10 @@ ext :
            category: 'company'
            version: 1
            filters:
-            query: "$.payload.brand.uid"
+            query: "$.brand.uid"
             condition: "(uid) => uid === 130"
            reducer:
-            brand_name: "$.payload.brand.name"
+            brand_name: "$.brand.name"
 ```
 
 ##### How webhook registry subscribes to webhooks on Fynd Platform?
