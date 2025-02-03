@@ -62,7 +62,6 @@ public class ExtensionADMController {
                     .plusMillis(Fields.MINUTES_LIMIT));
             if (session.isNew()) {
                 session.setOrganizationId(organizationId);
-                session.setScope(ext.getExtensionProperties().getScopes());
                 session.setExpires(FdkConstants.DATE_FORMAT.get()
                         .format(sessionExpires));
                 session.setExpiresIn(sessionExpires.getTime());
@@ -153,9 +152,8 @@ public class ExtensionADMController {
                         session = new Session(sid, true);
                     }
                     AccessTokenDto offlineTokenRes = partnerConfig.getPartnerOauthClient()
-                                                                   .getOfflineAccessToken(String.join(",", ext.getExtensionProperties().getScopes()), code);
+                                                                   .getOfflineAccessToken(null, code);
                     session.setOrganizationId(organizationId);
-                    session.setScope(ext.getExtensionProperties().getScopes());
                     session.setState(fdkSession.getState());
                     session.setExtensionId(ext.getExtensionProperties()
                                               .getApiKey());
