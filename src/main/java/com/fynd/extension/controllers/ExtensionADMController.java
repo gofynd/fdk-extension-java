@@ -62,7 +62,6 @@ public class ExtensionADMController {
                     .plusMillis(Fields.MINUTES_LIMIT));
             if (session.isNew()) {
                 session.setOrganizationId(organizationId);
-                session.setScope(ext.getExtensionProperties().getScopes());
                 session.setExpires(FdkConstants.DATE_FORMAT.get()
                         .format(sessionExpires));
                 session.setExpiresIn(sessionExpires.getTime());
@@ -100,7 +99,7 @@ public class ExtensionADMController {
             request.setAttribute("session", session);
             return ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT)
                     .header(HttpHeaders.LOCATION, redirectUrl)
-                    .header(HttpHeaders.SET_COOKIE, resCookie.toString())
+                    .header(HttpHeaders.SET_COOKIE, resCookie.toString()+ "; Partitioned;")
                     .build();
         } catch (Exception error) {
             log.error("Exception in install call ", error);
@@ -153,9 +152,8 @@ public class ExtensionADMController {
                         session = new Session(sid, true);
                     }
                     AccessTokenDto offlineTokenRes = partnerConfig.getPartnerOauthClient()
-                                                                   .getOfflineAccessToken(String.join(",", ext.getExtensionProperties().getScopes()), code);
+                                                                   .getOfflineAccessToken(null, code);
                     session.setOrganizationId(organizationId);
-                    session.setScope(ext.getExtensionProperties().getScopes());
                     session.setState(fdkSession.getState());
                     session.setExtensionId(ext.getExtensionProperties()
                                               .getApiKey());
@@ -181,7 +179,7 @@ public class ExtensionADMController {
                 String admLaunchCallback = uriBuilderFactory.builder().pathSegment("admin").build().toString();
                 return ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT)
                                      .header(HttpHeaders.LOCATION, admLaunchCallback)
-                                     .header(HttpHeaders.SET_COOKIE, resCookie.toString())
+                                     .header(HttpHeaders.SET_COOKIE, resCookie.toString()+ "; Partitioned;")
                                      .build();
             }
         } catch (Exception error) {

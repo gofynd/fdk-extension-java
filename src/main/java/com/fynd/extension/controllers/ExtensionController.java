@@ -67,7 +67,6 @@ public class ExtensionController {
                                                    .plusMillis(Fields.MINUTES_LIMIT));
             if (session.isNew()) {
                 session.setCompanyId(companyId);
-                session.setScope(ext.getExtensionProperties().getScopes());
                 session.setExpires(FdkConstants.DATE_FORMAT.get()
                                                            .format(sessionExpires));
                 session.setExpiresIn(sessionExpires.getTime());
@@ -108,7 +107,7 @@ public class ExtensionController {
             return ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT)
                                  .header(Fields.X_COMPANY_ID, companyId)
                                  .header(HttpHeaders.LOCATION, redirectUrl)
-                                 .header(HttpHeaders.SET_COOKIE, resCookie.toString())
+                                 .header(HttpHeaders.SET_COOKIE, resCookie.toString()+ "; Partitioned;")
                                  .build();
         } catch (Exception error) {
             log.error("Exception in install call ", error);
@@ -162,9 +161,8 @@ public class ExtensionController {
                         session = new Session(sid, true);
                     }
                     AccessTokenDto offlineTokenRes = platformConfig.getPlatformOauthClient()
-                                                                   .getOfflineAccessToken(String.join(",", ext.getExtensionProperties().getScopes()), code);
+                                                                   .getOfflineAccessToken(null, code);
                     session.setCompanyId(companyId);
-                    session.setScope(ext.getExtensionProperties().getScopes());
                     session.setState(fdkSession.getState());
                     session.setExtensionId(ext.getExtensionProperties()
                                               .getApiKey());
@@ -197,7 +195,7 @@ public class ExtensionController {
                 return ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT)
                                      .header(Fields.X_COMPANY_ID, companyId)
                                      .header(HttpHeaders.LOCATION, redirectUrl)
-                                     .header(HttpHeaders.SET_COOKIE, resCookie.toString())
+                                     .header(HttpHeaders.SET_COOKIE, resCookie.toString()+ "; Partitioned;")
                                      .build();
             }
         } catch (Exception error) {
@@ -227,11 +225,9 @@ public class ExtensionController {
             }
             AccessTokenDto offlineTokenRes = platformConfig.getPlatformOauthClient()
                                                            .getOfflineAccessToken(
-                                                                   String.join(
-                                                                   ",", ext.getExtensionProperties().getScopes()),
+                                                                    null,
                                                                    code);
             session.setCompanyId(companyId);
-            session.setScope(ext.getExtensionProperties().getScopes());
             session.setState(UUID.randomUUID()
                                  .toString());
             session.setExtensionId(ext.getExtensionProperties()

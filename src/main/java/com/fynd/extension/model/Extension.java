@@ -110,15 +110,10 @@ public class Extension {
             }
         }
 
-        List<String> scopeList = extensionProperties.getScopes();
-        if (scopeList != null && !scopeList.isEmpty()) {
-            verifyScopes(scopeList, extensionDetails);
+        if (Objects.nonNull(extensionDetails)) {
+            extensionProperties.setScopes(extensionDetails.getScope());
         } else {
-            if (Objects.nonNull(extensionDetails)) {
-                extensionProperties.setScopes(extensionDetails.getScope());
-            } else {
-                throw new FdkInvalidExtensionConfig("Invalid Extension details");
-            }
+            throw new FdkInvalidExtensionConfig("Invalid Extension details");
         }
 
         extension.setExtensionProperties(extensionProperties);
