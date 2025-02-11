@@ -83,7 +83,6 @@ public class EventConfig{
 
 
 
-
     @JsonProperty("created_on")
     private String createdOn;
 

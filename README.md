@@ -198,6 +198,40 @@ public class ExampleOfflineAccessMode {
 }
 ```
 
+#### How to get partnerClient for offline access_mode?
+
+To obtain the `PartnerClient` for offline access mode in your Java extension, use the provided `ExtensionService` class.
+This example demonstrates how to retrieve response time using the obtained `PartnerClient`
+
+```java
+@RestController
+@RequestMapping("/api/v1")
+public class ExampleOfflineAccessMode {
+
+    @Autowired
+    ExtensionService extensionService;
+
+    @GetMapping(value = "/response-time", produces = "application/json")
+    public WebhookPartnerModels.ResponseTimeTs getResponseTime() {
+        try {
+            String organizationId = "64b0e718f56860951c34d735";
+            PartnerClient partnerClient = extensionService.getPartnerClient("64b0e718f56860951c34d735");
+            WebhookPartnerModels.ResponseTimeTs  responseTime = partnerClient.webhook.responseTimeSummary(
+                   "66c5b90b2d58ee212f3891f8",
+                   "2024-11-18T11:38:44+05:30",
+                   "2024-11-18T14:38:44+05:30"
+            );
+
+            return responseTime;
+
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+}
+```
+
 #### How to call partner apis?
 
 To call partner api you need to have instance of `PartnerClient`. Instance holds methods for SDK classes.
@@ -244,20 +278,39 @@ ext :
       api_path: "/webhook" #<POST API URL>
       notification_email: <EMAIL_ID>
       subscribe_on_install: false, #optional. Default true
-      subscribed_saleschannel: 'all' #Can be 'SPECIFIC'/'EMPTY'
+      subscribed_saleschannel: 'specific' #Optional. Default all
+      marketplace: true, # to receive marketplace saleschannel events. Only allowed when subscribed_saleschannel is set to specific
       event_map:
-         - name: 'product/create'
+         - name: 'product/update'
            handler: productCreateHandler #Make sure this matches the Component Bean name
            category: 'company'
            version: '1'
            provider: 'rest' # If not provided, Default is 'rest'
-         -
-           name: 'product/delete'
+         - name: 'product/delete'
            handler: productDeleteHandler
            category: 'company'
            version: '1'
            provider: 'kafka'
-
+         - name: "brand/create"
+           topic: "company-brand-create"
+           category: "company"
+           version: 1
+           provider: "pub_sub"
+         - name: "extension/install"
+           queue: "extension-install"
+           workflow_name: "extension"
+           version: 1
+           provider: "temporal"
+         - name: "location/create"
+           queue: "company-location-create"
+           category: "company"
+           version: 1
+           provider: "sqs"
+         - name: "product-size/create"
+           event_bridge_name: "company-product-size-create"
+           category: "company"
+           version: 1
+           provider: "event_bridge"
 ```
 
 2. Create Handlers for each event which is mentioned in the Event Map (as specified above)
@@ -307,6 +360,68 @@ public class WebhookController {
 > For enabling events manually use function `enableSalesChannelWebhook`
 >
 > To disable receiving events for a saleschannel use function `disableSalesChannelWebhook`.
+
+
+```java
+   import com.fynd.extension.model.Extension;
+   import com.sdk.platform.PlatformClient;
+   import com.fynd.extension.service.WebhookService;
+   import jakarta.servlet.http.HttpServletRequest;
+   import lombok.extern.slf4j.Slf4j;
+   import org.springframework.web.bind.annotation.GetMapping;
+   import org.springframework.web.bind.annotation.RequestMapping;
+   import org.springframework.web.bind.annotation.RestController;
+   
+   @RestController
+   @RequestMapping("/api")
+   @Slf4j
+   public class PlatformController extends BasePlatformController {
+      @GetMapping(value = "/enableSalesChannelWebhook", produces = "application/json")
+      public String getProducts(HttpServletRequest request) {
+         try {
+            PlatformClient platformClient = (PlatformClient) request.getAttribute("platformClient");
+            Extension extension = (Extension) request.getAttribute("extension");
+            WebhookService webhookService = extension.getWebhookService();
+            webhookService.enableSalesChannelWebhook(platformClient,"66e3b32eca4335d0feff486c");
+            return "Webhook enabled successfully!";
+         } catch (Exception e) {
+            System.out.println(e.getMessage());
+            throw new RuntimeException(e);
+         }
+
+      }
+    }
+
+```
+
+#### How to register for Webhook Events?
+
+A filter and reducer can be provided to refine the data delivered for each subscribed event. The Filter functionality allows selective delivery of data by specifying conditions based on JSONPath queries and logical operators. Reducer allow customization of the payload structure by specifying only the fields needed by the subscriber. The reducer extracts fields from the event’s data and restructures them as needed.
+
+```yaml
+ext :
+   api_key : <API_KEY>
+   api_secret : <API_SECRET>
+   scope : ""
+   base_url : "https://test.extension.com"
+   access_mode : "offline"
+   webhook:
+      api_path: "/webhook" #<POST API URL>
+      notification_email: <EMAIL_ID>
+      subscribe_on_install: false, #optional. Default true
+      subscribed_saleschannel: 'specific' #Optional. Default all
+      marketplace: true, # to receive marketplace saleschannel events. Only allowed when subscribed_saleschannel is set to specific
+      event_map:
+         - name: 'product/update'
+           handler: productCreateHandler #Make sure this matches the Component Bean name
+           category: 'company'
+           version: 1
+           filters:
+            query: "$.brand.uid"
+            condition: "(uid) => uid === 130"
+           reducer:
+            brand_name: "$.brand.name"
+```
 
 ##### How webhook registry subscribes to webhooks on Fynd Platform?
 

@@ -83,5 +83,10 @@ public class SubscriberConfigRequestV2{
     private List<Events> events;
 
 
+    @JsonProperty("type")
+    @JsonInclude(JsonInclude.Include.ALWAYS)
+    private String type;
+
+
 
 }

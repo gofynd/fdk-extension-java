@@ -7,6 +7,7 @@ import com.fynd.extension.session.SessionStorage;
 import com.sdk.application.ApplicationClient;
 import com.sdk.application.ApplicationConfig;
 import com.sdk.common.model.AccessTokenDto;
+import com.sdk.partner.PartnerClient;
 import com.sdk.platform.PlatformClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +45,30 @@ public class ExtensionService {
             }
         } catch (Exception e) {
             log.error("Exception in getting Platform Client : ", e);
+        }
+
+        return client;
+    }
+
+    public PartnerClient getPartnerClient(String organizationId) {
+        log.debug("Fetching PartnerClient for organizationId : {}", organizationId);
+        PartnerClient client = null;
+        try {
+            if (!this.ext.isOnlineAccessMode()) {
+                String sid = Session.generateSessionId(false, new Option(organizationId, this.ext.getExtensionProperties()
+                        .getCluster()));
+                Session session = sessionStorage.getSession(sid);
+                if (Objects.nonNull(session)) {
+                    AccessTokenDto rawToken = new AccessTokenDto();
+                    rawToken.setExpiresIn((session.getExpiresIn()));
+                    rawToken.setAccessToken(session.getAccessToken());
+                    rawToken.setRefreshToken(session.getRefreshToken());
+                    client = this.ext.getPartnerClient(organizationId, session);
+                }
+                log.info("Partner Client for Organization Id : {} and Session Id :{}", organizationId, sid);
+            }
+        } catch (Exception e) {
+            log.error("Exception in getting Partner Client : ", e);
         }
 
         return client;
