@@ -9,7 +9,7 @@
 	</parent>
 	<groupId>com.fynd</groupId>
 	<artifactId>fynd-extension-java</artifactId>
-	<version>0.6.6</version>
+	<version>1.0.0</version>
 	<name>fynd-extension-java</name>
 	<description>Java Fynd Extension Library</description>
 	<properties>
