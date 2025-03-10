@@ -161,7 +161,7 @@ public class ExtensionController {
                         session = new Session(sid, true);
                     }
                     AccessTokenDto offlineTokenRes = platformConfig.getPlatformOauthClient()
-                                                                   .getOfflineAccessToken(null, code);
+                                                                   .getOfflineAccessToken(String.join(",", ext.getExtensionProperties().getScopes()), code);
                     session.setCompanyId(companyId);
                     session.setState(fdkSession.getState());
                     session.setExtensionId(ext.getExtensionProperties()

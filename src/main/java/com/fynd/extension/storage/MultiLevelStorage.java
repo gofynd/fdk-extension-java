@@ -51,10 +51,10 @@ public class MultiLevelStorage extends BaseStorage {
 
     @Override
     public String get(String key) {
-        String redisKey = super.prefixKey + key;
+        String redisKey = generateKey(key);
         String value = fetchFromRedis(redisKey);
         if (value == null) {
-            value = fetchFromMongo(key);
+            value = fetchFromMongo(redisKey);
             if (value != null) {
                 set(key, value);
             }
@@ -64,20 +64,27 @@ public class MultiLevelStorage extends BaseStorage {
 
     @Override
     public String set(String key, String value) {
-        storeInMongo(key, value, 0);
-        return storeInRedis(super.prefixKey + key, value);
+        String redisKey = generateKey(key);
+        storeInMongo(redisKey, value, 0);
+        return storeInRedis(redisKey, value);
     }
 
     @Override
     public Long del(String key) {
-        deleteFromMongo(key);
-        return deleteFromRedis(super.prefixKey + key);
+        String redisKey = generateKey(key);
+        deleteFromMongo(redisKey);
+        return deleteFromRedis(redisKey);
     }
 
     @Override
     public String setex(String key, int ttl, String value) {
-        storeInMongo(key, value, ttl);
-        return storeInRedisWithTTL(super.prefixKey + key, ttl, value);
+        String redisKey = generateKey(key);
+        storeInMongo(redisKey, value, ttl);
+        return storeInRedisWithTTL(redisKey, ttl, value);
+    }
+
+    private String generateKey(String key) {
+        return super.prefixKey + key;
     }
 
     private void ensureTTLIndex() {
