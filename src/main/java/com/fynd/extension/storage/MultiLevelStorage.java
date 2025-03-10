@@ -1,0 +1,166 @@
+package com.fynd.extension.storage;
+
+import redis.clients.jedis.*;
+import com.mongodb.client.*;
+import org.bson.Document;
+import com.mongodb.client.model.IndexOptions;
+import com.mongodb.client.model.ReplaceOptions;
+import java.util.Date;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+public class MultiLevelStorage extends BaseStorage {
+
+    private boolean isClusterMode;
+    private JedisPool jedisPool;
+    private JedisCluster jedisCluster;
+    private String prefixKey;
+    private JedisSentinelPool jedisSentinelPool;
+    private MongoCollection<Document> mongoCollection;
+    private static final String DEFAULT_COLLECTION_NAME = "fdk_ext_acc_tokens";
+
+    public MultiLevelStorage(JedisPool jedisPool, MongoDatabase mongoDatabase, String prefixKey, Map<String, String> options) {
+        super(prefixKey);
+        String collectionName = options.getOrDefault("collectionName", DEFAULT_COLLECTION_NAME);
+        this.jedisPool = jedisPool;
+        this.mongoCollection = mongoDatabase.getCollection(collectionName);
+        this.prefixKey = prefixKey;
+        this.isClusterMode = false;
+        ensureTTLIndex();
+    }
+
+    public MultiLevelStorage(JedisCluster jedisCluster, MongoDatabase mongoDatabase, String prefixKey, Map<String, String> options) {
+        super(prefixKey);
+        String collectionName = options.getOrDefault("collectionName", DEFAULT_COLLECTION_NAME);
+        this.jedisCluster = jedisCluster;
+        this.mongoCollection = mongoDatabase.getCollection(collectionName);
+        this.prefixKey = prefixKey;
+        this.isClusterMode = true;
+        ensureTTLIndex();
+    }
+
+    public MultiLevelStorage(JedisSentinelPool jedisSentinelPool, MongoDatabase mongoDatabase, String prefixKey, Map<String, String> options) {
+        super(prefixKey);
+        String collectionName = options.getOrDefault("collectionName", DEFAULT_COLLECTION_NAME);
+        this.jedisSentinelPool = jedisSentinelPool;
+        this.mongoCollection = mongoDatabase.getCollection(collectionName);
+        this.prefixKey = prefixKey;
+        this.isClusterMode = false;
+        ensureTTLIndex();
+    }
+
+    @Override
+    public String get(String key) {
+        String redisKey = super.prefixKey + key;
+        String value = fetchFromRedis(redisKey);
+        if (value == null) {
+            value = fetchFromMongo(key);
+            if (value != null) {
+                set(key, value);
+            }
+        }
+        return value;
+    }
+
+    @Override
+    public String set(String key, String value) {
+        storeInMongo(key, value, 0);
+        return storeInRedis(super.prefixKey + key, value);
+    }
+
+    @Override
+    public Long del(String key) {
+        deleteFromMongo(key);
+        return deleteFromRedis(super.prefixKey + key);
+    }
+
+    @Override
+    public String setex(String key, int ttl, String value) {
+        storeInMongo(key, value, ttl);
+        return storeInRedisWithTTL(super.prefixKey + key, ttl, value);
+    }
+
+    private void ensureTTLIndex() {
+        mongoCollection.createIndex(new Document("createdAt", 1), new IndexOptions().expireAfter(0L, TimeUnit.SECONDS));
+    }
+
+    private String fetchFromMongo(String key) {
+        Document doc = mongoCollection.find(new Document("_id", key)).first();
+        if (doc != null) {
+            Date createdAt = doc.getDate("createdAt");
+            if (createdAt != null && createdAt.getTime() < System.currentTimeMillis()) {
+                deleteFromMongo(key);
+                return null;
+            }
+            return doc.getString("value");
+        }
+        return null;
+    }
+
+    private void storeInMongo(String key, String value, int ttl) {
+        Document doc = new Document("_id", key)
+                .append("value", value)
+                .append("createdAt", new Date(System.currentTimeMillis() + (ttl * 1000L)));
+        mongoCollection.replaceOne(new Document("_id", key), doc, new ReplaceOptions().upsert(true));
+    }
+
+    private String fetchFromRedis(String key) {
+        if (isClusterMode) {
+            return jedisCluster.get(key);
+        } else if (jedisSentinelPool != null) {
+            try (Jedis jedis = jedisSentinelPool.getResource()) {
+                return jedis.get(key);
+            }
+        } else {
+            try (Jedis jedis = jedisPool.getResource()) {
+                return jedis.get(key);
+            }
+        }
+    }
+
+    private String storeInRedis(String key, String value) {
+        if (isClusterMode) {
+            return jedisCluster.set(key, value);
+        } else if (jedisSentinelPool != null) {
+            try (Jedis jedis = jedisSentinelPool.getResource()) {
+                return jedis.set(key, value);
+            }
+        } else {
+            try (Jedis jedis = jedisPool.getResource()) {
+                return jedis.set(key, value);
+            }
+        }
+    }
+
+    private String storeInRedisWithTTL(String key, int ttl, String value) {
+        if (isClusterMode) {
+            return jedisCluster.setex(key, ttl, value);
+        } else if (jedisSentinelPool != null) {
+            try (Jedis jedis = jedisSentinelPool.getResource()) {
+                return jedis.setex(key, ttl, value);
+            }
+        } else {
+            try (Jedis jedis = jedisPool.getResource()) {
+                return jedis.setex(key, ttl, value);
+            }
+        }
+    }
+
+    private Long deleteFromRedis(String key) {
+        if (isClusterMode) {
+            return jedisCluster.del(key);
+        } else if (jedisSentinelPool != null) {
+            try (Jedis jedis = jedisSentinelPool.getResource()) {
+                return jedis.del(key);
+            }
+        } else {
+            try (Jedis jedis = jedisPool.getResource()) {
+                return jedis.del(key);
+            }
+        }
+    }
+
+    private void deleteFromMongo(String key) {
+        mongoCollection.deleteOne(new Document("_id", key));
+    }
+}

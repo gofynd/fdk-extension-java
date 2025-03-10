@@ -57,6 +57,12 @@
 		</dependency>
 
 		<dependency>
+			<groupId>org.mongodb</groupId>
+			<artifactId>mongodb-driver-sync</artifactId>
+			<version>4.3.1</version>
+		</dependency>
+		
+		<dependency>
 			<groupId>commons-validator</groupId>
 			<artifactId>commons-validator</artifactId>
 			<version>${commons.version}</version>
