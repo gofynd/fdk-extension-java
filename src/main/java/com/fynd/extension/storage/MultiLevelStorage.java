@@ -92,7 +92,7 @@ public class MultiLevelStorage extends BaseStorage {
     }
 
     private String fetchFromMongo(String key) {
-        Document doc = mongoCollection.find(new Document("_id", key)).first();
+        Document doc = mongoCollection.find(new Document("key", key)).first();
         if (doc != null) {
             Date expireAt = doc.getDate("expireAt");
             if (expireAt != null && expireAt.getTime() < System.currentTimeMillis()) {
@@ -107,11 +107,11 @@ public class MultiLevelStorage extends BaseStorage {
     private void storeInMongo(String key, String value, int ttl) {
         Date now = new Date();
         Date expireAt = new Date(now.getTime() + (ttl * 1000L));
-        Document doc = new Document("_id", key)
+        Document doc = new Document("key", key)
                 .append("value", value)
                 .append("updatedAt", now)
                 .append("expireAt", expireAt);
-        mongoCollection.replaceOne(new Document("_id", key), doc, new ReplaceOptions().upsert(true));
+        mongoCollection.replaceOne(new Document("key", key), doc, new ReplaceOptions().upsert(true));
     }
 
     private String fetchFromRedis(String key) {
@@ -171,6 +171,6 @@ public class MultiLevelStorage extends BaseStorage {
     }
 
     private void deleteFromMongo(String key) {
-        mongoCollection.deleteOne(new Document("_id", key));
+        mongoCollection.deleteOne(new Document("key", key));
     }
 }
