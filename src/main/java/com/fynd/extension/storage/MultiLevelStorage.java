@@ -88,14 +88,14 @@ public class MultiLevelStorage extends BaseStorage {
     }
 
     private void ensureTTLIndex() {
-        mongoCollection.createIndex(new Document("createdAt", 1), new IndexOptions().expireAfter(0L, TimeUnit.SECONDS));
+        mongoCollection.createIndex(new Document("expireAt", 1), new IndexOptions().expireAfter(0L, TimeUnit.SECONDS));
     }
 
     private String fetchFromMongo(String key) {
         Document doc = mongoCollection.find(new Document("_id", key)).first();
         if (doc != null) {
-            Date createdAt = doc.getDate("createdAt");
-            if (createdAt != null && createdAt.getTime() < System.currentTimeMillis()) {
+            Date expireAt = doc.getDate("expireAt");
+            if (expireAt != null && expireAt.getTime() < System.currentTimeMillis()) {
                 deleteFromMongo(key);
                 return null;
             }
@@ -105,9 +105,12 @@ public class MultiLevelStorage extends BaseStorage {
     }
 
     private void storeInMongo(String key, String value, int ttl) {
+        Date now = new Date();
+        Date expireAt = new Date(now.getTime() + (ttl * 1000L));
         Document doc = new Document("_id", key)
                 .append("value", value)
-                .append("createdAt", new Date(System.currentTimeMillis() + (ttl * 1000L)));
+                .append("updatedAt", now)
+                .append("expireAt", expireAt);
         mongoCollection.replaceOne(new Document("_id", key), doc, new ReplaceOptions().upsert(true));
     }
 
