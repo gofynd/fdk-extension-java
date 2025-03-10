@@ -34,7 +34,6 @@ FDK Extension Helper Library
     ext :
       api_key : <API_KEY>
       api_secret : <API_SECRET>
-      scope : 'company/saleschannel'
       base_url : 'https://test.extension.com'
       access_mode : 'offline'
    
@@ -271,7 +270,6 @@ Webhook events can be helpful to handle tasks when certain events occur on platf
 ext :
    api_key : <API_KEY>
    api_secret : <API_SECRET>
-   scope : ""
    base_url : "https://test.extension.com"
    access_mode : "offline"
    webhook:
@@ -402,7 +400,6 @@ A filter and reducer can be provided to refine the data delivered for each subsc
 ext :
    api_key : <API_KEY>
    api_secret : <API_SECRET>
-   scope : ""
    base_url : "https://test.extension.com"
    access_mode : "offline"
    webhook:
