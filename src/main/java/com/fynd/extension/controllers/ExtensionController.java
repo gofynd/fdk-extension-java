@@ -99,7 +99,7 @@ public class ExtensionController {
                 authCallback += "?application_id=" + applicationId;
             }
             String redirectUrl = platformConfig.getPlatformOauthClient()
-                                               .getAuthorizationURL(session.getScope(), authCallback,
+                                               .getAuthorizationURL(ext.getExtensionProperties().getScopes(), authCallback,
                                                                     session.getState(),
                                                                     true); // Always generate online mode token for extension launch
             sessionStorage.saveSession(session);
