@@ -137,4 +137,15 @@ public class RedisStorage extends BaseStorage {
             }
         }
     }
+
+    // Add TTL method
+    public Long getTTL(String key) {
+        if (isClusterMode) {
+            return jedisCluster.ttl(super.prefixKey + key);
+        } else {
+            try (Jedis jedis = jedisPool.getResource()) {
+                return jedis.ttl(super.prefixKey + key);
+            }
+        }
+    }
 }
