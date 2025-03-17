@@ -5,7 +5,9 @@ import com.mongodb.client.*;
 import org.bson.Document;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.ReplaceOptions;
+
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -65,7 +67,7 @@ public class MultiLevelStorage extends BaseStorage {
     @Override
     public String set(String key, String value) {
         String redisKey = generateKey(key);
-        storeInMongo(redisKey, value, 0);
+        storeInMongo(redisKey, value);
         return storeInRedis(redisKey, value);
     }
 
@@ -88,7 +90,13 @@ public class MultiLevelStorage extends BaseStorage {
     }
 
     private void ensureTTLIndex() {
-        mongoCollection.createIndex(new Document("expireAt", 1), new IndexOptions().expireAfter(0L, TimeUnit.SECONDS));
+        List<Document> indexes = mongoCollection.listIndexes().into(new java.util.ArrayList<>());
+        boolean ttlIndexExists = indexes.stream()
+                .anyMatch(index -> index.get("key", Document.class).containsKey("expireAt") &&
+                        index.containsKey("expireAfterSeconds"));
+        if (!ttlIndexExists) {
+            mongoCollection.createIndex(new Document("expireAt", 1), new IndexOptions().expireAfter(0L, TimeUnit.SECONDS));
+        }
     }
 
     private String fetchFromMongo(String key) {
@@ -111,6 +119,14 @@ public class MultiLevelStorage extends BaseStorage {
                 .append("value", value)
                 .append("updatedAt", now)
                 .append("expireAt", expireAt);
+        mongoCollection.replaceOne(new Document("key", key), doc, new ReplaceOptions().upsert(true));
+    }
+
+    private void storeInMongo(String key, String value) {
+        Date now = new Date();
+        Document doc = new Document("key", key)
+                .append("value", value)
+                .append("updatedAt", now);
         mongoCollection.replaceOne(new Document("key", key), doc, new ReplaceOptions().upsert(true));
     }
 
