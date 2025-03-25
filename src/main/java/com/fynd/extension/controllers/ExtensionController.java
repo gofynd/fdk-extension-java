@@ -131,8 +131,17 @@ public class ExtensionController {
                 if (Objects.isNull(fdkSession)) {
                     throw new FdkSessionNotFound("Can not complete oauth process as session not found");
                 }
-                if (!fdkSession.getState()
-                               .equalsIgnoreCase(state)) {
+                if (!fdkSession.getState().equalsIgnoreCase(state)) {
+                    // Clear the cookie if the OAuth call is invalid
+                    String compCookieName = FdkConstants.SESSION_COOKIE_NAME + DELIMITER + companyId;
+                    ResponseCookie resCookie = ResponseCookie.from(compCookieName, "")
+                                                             .httpOnly(true)
+                                                             .sameSite("None")
+                                                             .secure(true)
+                                                             .path("/")
+                                                             .maxAge(0)
+                                                             .build();
+                    response.addHeader(HttpHeaders.SET_COOKIE, resCookie.toString() );
                     throw new FdkInvalidOAuth("Invalid oauth call");
                 }
                 PlatformConfig platformConfig = ext.getPlatformConfig(fdkSession.getCompanyId());
