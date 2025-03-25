@@ -153,7 +153,6 @@ public class Extension {
         try {
             Cookie cookieFound = Arrays.stream(cookies)
                                        .filter(Objects::nonNull)
-                                       .filter(cookie -> !isPartitioned(cookie)) 
                                        .filter(cookie -> Objects.nonNull(cookie.getName()) && cookie.getName()
                                                                                                     .contains(
                                                                                                             FdkConstants.SESSION_COOKIE_NAME) && cookie.getName()
@@ -169,11 +168,6 @@ public class Extension {
             log.error("Failure in fetching Cookie for Company Id : {}", companyId, e);
         }
         return StringUtils.EMPTY;
-    }
-
-    private boolean isPartitioned(Cookie cookie) {
-        // Partitioned cookies require Secure + SameSite=Lax/Strict (Spring Boot 3.2+ supports SameSite)
-        return cookie.getSecure() && ("Lax".equalsIgnoreCase(cookie.getComment()) || "Strict".equalsIgnoreCase(cookie.getComment()));
     }
 
     public String getCookieValue(Cookie[] cookies) {
