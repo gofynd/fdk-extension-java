@@ -1,7 +1,5 @@
 package com.fynd.extension.controllers;
 
-import static com.fynd.extension.controllers.ExtensionController.Fields.DELIMITER;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
