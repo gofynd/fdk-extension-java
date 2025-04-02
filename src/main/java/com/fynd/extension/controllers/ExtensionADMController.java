@@ -120,30 +120,11 @@ public class ExtensionADMController {
             if (StringUtils.isNotEmpty(sessionIdForOrganization)) {
                 Session fdkSession = sessionStorage.getSession(sessionIdForOrganization);
                 if (Objects.isNull(fdkSession)) {
-                    // Clear the cookie if session not found
-                    String cookieName = FdkConstants.ADMIN_SESSION_COOKIE_NAME;
-                    ResponseCookie resCookie = ResponseCookie.from(cookieName, "")
-                                                                .httpOnly(true)
-                                                                .sameSite("None")
-                                                                .secure(true)
-                                                                .path("/")
-                                                                .maxAge(0)
-                                                                .build();
-                    response.addHeader(HttpHeaders.SET_COOKIE, resCookie.toString() );
+                    Extension.clearInvalidCookie(FdkConstants.ADMIN_SESSION_COOKIE_NAME, response);
                     throw new FdkSessionNotFound("Can not complete oauth process as session not found");
                 }
-                if (!fdkSession.getState()
-                               .equalsIgnoreCase(state)) {
-                    // Clear the cookie if the OAuth call is invalid
-                    String cookieName = FdkConstants.ADMIN_SESSION_COOKIE_NAME;
-                    ResponseCookie resCookie = ResponseCookie.from(cookieName, "")
-                                                             .httpOnly(true)
-                                                             .sameSite("None")
-                                                             .secure(true)
-                                                             .path("/")
-                                                             .maxAge(0)
-                                                             .build();
-                    response.addHeader(HttpHeaders.SET_COOKIE, resCookie.toString() );
+                if (!fdkSession.getState().equalsIgnoreCase(state)) {
+                    Extension.clearInvalidCookie(FdkConstants.ADMIN_SESSION_COOKIE_NAME, response);
                     throw new FdkInvalidOAuth("Invalid oauth call");
                 }
                 PartnerConfig partnerConfig = ext.getPartnerConfig(fdkSession.getOrganizationId());

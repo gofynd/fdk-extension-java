@@ -129,29 +129,11 @@ public class ExtensionController {
             if (StringUtils.isNotEmpty(sessionIdForCompany)) {
                 Session fdkSession = sessionStorage.getSession(sessionIdForCompany);
                 if (Objects.isNull(fdkSession)) {
-                    // Clear the cookie if the session is not found
-                    String compCookieName = FdkConstants.SESSION_COOKIE_NAME + DELIMITER + companyId;
-                    ResponseCookie resCookie = ResponseCookie.from(compCookieName, "")
-                                                             .httpOnly(true)
-                                                             .sameSite("None")
-                                                             .secure(true)
-                                                             .path("/")
-                                                             .maxAge(0)
-                                                             .build();
-                    response.addHeader(HttpHeaders.SET_COOKIE, resCookie.toString() );
+                    Extension.clearInvalidCookie(FdkConstants.SESSION_COOKIE_NAME + DELIMITER + companyId, response);
                     throw new FdkSessionNotFound("Can not complete oauth process as session not found");
                 }
                 if (!fdkSession.getState().equalsIgnoreCase(state)) {
-                    // Clear the cookie if the OAuth call is invalid
-                    String compCookieName = FdkConstants.SESSION_COOKIE_NAME + DELIMITER + companyId;
-                    ResponseCookie resCookie = ResponseCookie.from(compCookieName, "")
-                                                             .httpOnly(true)
-                                                             .sameSite("None")
-                                                             .secure(true)
-                                                             .path("/")
-                                                             .maxAge(0)
-                                                             .build();
-                    response.addHeader(HttpHeaders.SET_COOKIE, resCookie.toString() );
+                    Extension.clearInvalidCookie(FdkConstants.SESSION_COOKIE_NAME + DELIMITER + companyId, response);
                     throw new FdkInvalidOAuth("Invalid oauth call");
                 }
                 PlatformConfig platformConfig = ext.getPlatformConfig(fdkSession.getCompanyId());

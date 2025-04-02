@@ -26,15 +26,16 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.Interceptor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.util.CollectionUtils;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.util.ObjectUtils;
 import retrofit2.Response;
 
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static com.fynd.extension.controllers.ExtensionController.Fields.DELIMITER;
 
@@ -190,15 +191,15 @@ public class Extension {
         return StringUtils.EMPTY;
     }
 
-    private static void verifyScopes(List<String> scopeList, ExtensionDetailsDTO extensionDetailsDTO) {
-        List<String> missingScopes = scopeList.stream()
-                                              .filter(val -> !extensionDetailsDTO.getScope()
-                                                                                 .contains(val))
-                                              .collect(Collectors.toList());
-        if (CollectionUtils.isEmpty(scopeList) || !missingScopes.isEmpty()) {
-            throw new FdkInvalidExtensionConfig(
-                    "Invalid scopes in extension config. Invalid scopes : " + missingScopes);
-        }
+    public static void clearInvalidCookie(String cookieName, HttpServletResponse response) {
+        ResponseCookie resCookie = ResponseCookie.from(cookieName, "")
+                                                 .httpOnly(true)
+                                                 .sameSite("None")
+                                                 .secure(true)
+                                                 .path("/")
+                                                 .maxAge(0)
+                                                 .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, resCookie.toString());
     }
 
     public String getAuthCallback() {
