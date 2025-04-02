@@ -120,10 +120,11 @@ public class ExtensionADMController {
             if (StringUtils.isNotEmpty(sessionIdForOrganization)) {
                 Session fdkSession = sessionStorage.getSession(sessionIdForOrganization);
                 if (Objects.isNull(fdkSession)) {
+                    Extension.clearInvalidCookie(FdkConstants.ADMIN_SESSION_COOKIE_NAME, response);
                     throw new FdkSessionNotFound("Can not complete oauth process as session not found");
                 }
-                if (!fdkSession.getState()
-                               .equalsIgnoreCase(state)) {
+                if (!fdkSession.getState().equalsIgnoreCase(state)) {
+                    Extension.clearInvalidCookie(FdkConstants.ADMIN_SESSION_COOKIE_NAME, response);
                     throw new FdkInvalidOAuth("Invalid oauth call");
                 }
                 PartnerConfig partnerConfig = ext.getPartnerConfig(fdkSession.getOrganizationId());

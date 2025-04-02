@@ -2,7 +2,11 @@ package com.fynd.extension.storage;
 
 
 import redis.clients.jedis.*;
+import redis.clients.jedis.params.ScanParams;
+import redis.clients.jedis.resps.ScanResult;
+
 import java.util.Map;
+import java.util.Set;
 
 public class RedisStorage extends BaseStorage {
 
@@ -41,7 +45,7 @@ public class RedisStorage extends BaseStorage {
             try (Jedis jedis = jedisSentinelPool.getResource()) {
                 return jedis.get(super.prefixKey + key);
             }
-        }else {
+        } else {
             try (Jedis jedis = jedisPool.getResource()) {
                 return jedis.get(super.prefixKey + key);
             }
@@ -56,7 +60,7 @@ public class RedisStorage extends BaseStorage {
             try (Jedis jedis = jedisSentinelPool.getResource()) {
                 return jedis.set(super.prefixKey + key, value);
             }
-        }else {
+        } else {
             try (Jedis jedis = jedisPool.getResource()) {
                 return jedis.set(super.prefixKey + key, value);
             }
@@ -71,7 +75,7 @@ public class RedisStorage extends BaseStorage {
             try (Jedis jedis = jedisSentinelPool.getResource()) {
                 return jedis.del(super.prefixKey + key);
             }
-        }else {
+        } else {
             try (Jedis jedis = jedisPool.getResource()) {
                 return jedis.del(super.prefixKey + key);
             }
@@ -86,7 +90,7 @@ public class RedisStorage extends BaseStorage {
             try (Jedis jedis = jedisSentinelPool.getResource()) {
                 return jedis.setex(super.prefixKey + key, ttl, value);
             }
-        }else {
+        } else {
             try (Jedis jedis = jedisPool.getResource()) {
                 return jedis.setex(super.prefixKey + key, ttl, value);
             }
@@ -101,7 +105,7 @@ public class RedisStorage extends BaseStorage {
             try (Jedis jedis = jedisSentinelPool.getResource()) {
                 return jedis.hget(super.prefixKey + key, hashKey);
             }
-        }else {
+        } else {
             try (Jedis jedis = jedisPool.getResource()) {
                 return jedis.hget(super.prefixKey + key, hashKey);
             }
@@ -116,7 +120,7 @@ public class RedisStorage extends BaseStorage {
             try (Jedis jedis = jedisSentinelPool.getResource()) {
                 return jedis.hset(super.prefixKey + key, hashKey, value);
             }
-        }else {
+        } else {
             try (Jedis jedis = jedisPool.getResource()) {
                 return jedis.hset(super.prefixKey + key, hashKey, value);
             }
@@ -131,10 +135,89 @@ public class RedisStorage extends BaseStorage {
             try (Jedis jedis = jedisSentinelPool.getResource()) {
                 return (Map<String, Object>) (Map) jedis.hgetAll(super.prefixKey + key);
             }
-        }else {
+        } else {
             try (Jedis jedis = jedisPool.getResource()) {
                 return (Map<String, Object>) (Map) jedis.hgetAll(super.prefixKey + key);
             }
         }
     }
+
+    // Add TTL method
+    public Long getTTL(String key) {
+        if (isClusterMode) {
+            return jedisCluster.ttl(super.prefixKey + key);
+        } else {
+            try (Jedis jedis = jedisPool.getResource()) {
+                return jedis.ttl(super.prefixKey + key);
+            }
+        }
+    }
+
+
+    public String getFirstKey(String keyPattern) {
+        String pattern = super.prefixKey + keyPattern;
+
+        if (isClusterMode) {
+            return getFirstKeyFromCluster(pattern);  // Cluster Mode
+        } else if (jedisSentinelPool != null) {
+            return getFirstKeyFromSentinel(pattern); // Sentinel Mode
+        } else {
+            return getFirstKeyFromStandalone(pattern); // Standalone Mode
+        }
+    }
+
+    private String getFirstKeyFromStandalone(String pattern) {
+        try (Jedis jedis = jedisPool.getResource()) {
+            String cursor = "0";
+            ScanParams scanParams = new ScanParams().match(pattern).count(100);
+
+            do {
+                ScanResult<String> scanResult = jedis.scan(cursor, scanParams);
+                if (!scanResult.getResult().isEmpty()) {
+                    return scanResult.getResult().get(0); // Return first key found
+                }
+                cursor = scanResult.getCursor();
+            } while (!cursor.equals("0")); // Stop once first match is found
+        }
+        return null; // No match found
+    }
+
+    private String getFirstKeyFromSentinel(String pattern) {
+        try (Jedis jedis = jedisSentinelPool.getResource()) {
+            String cursor = "0";
+            ScanParams scanParams = new ScanParams().match(pattern).count(100);
+
+            do {
+                ScanResult<String> scanResult = jedis.scan(cursor, scanParams);
+                if (!scanResult.getResult().isEmpty()) {
+                    return scanResult.getResult().get(0); // Return first key found
+                }
+                cursor = scanResult.getCursor();
+            } while (!cursor.equals("0")); // Stop once first match is found
+        }
+        return null; // No match found
+    }
+
+    private String getFirstKeyFromCluster(String pattern) {
+                String cursor = "0";
+                ScanParams scanParams = new ScanParams().match(pattern).count(100);
+                do {
+                    ScanResult<String> scanResult = jedisCluster.scan(cursor, scanParams);
+                    if (!scanResult.getResult().isEmpty()) {
+                        return scanResult.getResult().get(0); // Return first key found
+                    }
+                    cursor = scanResult.getCursor();
+                } while (!cursor.equals("0")); // Stop once first match is found
+        return null; // No match found
+    }
+
+//    public Set<String> getKeys(String key) {
+//        if (isClusterMode) {
+//            return jedisCluster.keys(super.prefixKey + key);
+//        } else {
+//            try (Jedis jedis = jedisPool.getResource()) {
+//                return jedis.keys(super.prefixKey + key);
+//            }
+//        }
+//    }
 }

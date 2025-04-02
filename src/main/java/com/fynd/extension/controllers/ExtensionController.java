@@ -99,7 +99,7 @@ public class ExtensionController {
                 authCallback += "?application_id=" + applicationId;
             }
             String redirectUrl = platformConfig.getPlatformOauthClient()
-                                               .getAuthorizationURL(session.getScope(), authCallback,
+                                               .getAuthorizationURL(ext.getExtensionProperties().getScopes(), authCallback,
                                                                     session.getState(),
                                                                     true); // Always generate online mode token for extension launch
             sessionStorage.saveSession(session);
@@ -129,10 +129,11 @@ public class ExtensionController {
             if (StringUtils.isNotEmpty(sessionIdForCompany)) {
                 Session fdkSession = sessionStorage.getSession(sessionIdForCompany);
                 if (Objects.isNull(fdkSession)) {
+                    Extension.clearInvalidCookie(FdkConstants.SESSION_COOKIE_NAME + DELIMITER + companyId, response);
                     throw new FdkSessionNotFound("Can not complete oauth process as session not found");
                 }
-                if (!fdkSession.getState()
-                               .equalsIgnoreCase(state)) {
+                if (!fdkSession.getState().equalsIgnoreCase(state)) {
+                    Extension.clearInvalidCookie(FdkConstants.SESSION_COOKIE_NAME + DELIMITER + companyId, response);
                     throw new FdkInvalidOAuth("Invalid oauth call");
                 }
                 PlatformConfig platformConfig = ext.getPlatformConfig(fdkSession.getCompanyId());
@@ -161,7 +162,7 @@ public class ExtensionController {
                         session = new Session(sid, true);
                     }
                     AccessTokenDto offlineTokenRes = platformConfig.getPlatformOauthClient()
-                                                                   .getOfflineAccessToken(null, code);
+                                                                   .getOfflineAccessToken(String.join(",", ext.getExtensionProperties().getScopes()), code);
                     session.setCompanyId(companyId);
                     session.setState(fdkSession.getState());
                     session.setExtensionId(ext.getExtensionProperties()
