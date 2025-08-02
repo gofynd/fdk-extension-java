@@ -79,7 +79,7 @@ public class ExtensionService {
         log.debug("Fetching ApplicationClient for applicationId : {}", applicationId);
         ApplicationConfig applicationConfig = new ApplicationConfig(applicationId, applicationToken,
                                                                     ext.getExtensionProperties()
-                                                                       .getCluster());
+                                                                       .getCluster(), ext.getExtensionProperties().isDebug());
         return new ApplicationClient(applicationConfig);
     }
 

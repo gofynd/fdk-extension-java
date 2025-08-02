@@ -251,8 +251,8 @@ public class Extension {
             throw new FdkInvalidExtensionConfig("Extension not initialized due to invalid data");
         }
         return new PlatformConfig(companyId, this.extensionProperties.getApiKey(),
-                this.extensionProperties.getApiSecret(), this.extensionProperties.getCluster(),
-                false);
+                                  this.extensionProperties.getApiSecret(), this.extensionProperties.getCluster(),
+                                  this.extensionProperties.isDebug());
     }
     
     public PartnerConfig getPartnerConfig(String organizationId) {
@@ -264,7 +264,7 @@ public class Extension {
                 this.extensionProperties.getApiKey(),
                 this.extensionProperties.getApiSecret(),
                 this.extensionProperties.getCluster(),
-                false
+                this.extensionProperties.isDebug()
         );
     }
 

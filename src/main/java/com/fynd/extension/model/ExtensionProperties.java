@@ -28,6 +28,8 @@ public class ExtensionProperties {
 
     private WebhookProperties webhook;
 
+    private boolean debug = false;
+
     // Default cluster value
     private static final String DEFAULT_CLUSTER = "https://api.fynd.com";
 
